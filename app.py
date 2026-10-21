@@ -3,6 +3,140 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+def validate_sales_data(df):
+    """Validate and prepare an uploaded sales dataset."""
+    df = df.copy()
+
+    required = ["date", "units_sold", "selling_price", "unit_cost"]
+    missing_columns = [col for col in required if col not in df.columns]
+
+    if missing_columns:
+        return None, [
+            f"Missing required column: {col}"
+            for col in missing_columns
+        ]
+
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+
+    numeric_columns = [
+        "units_sold", "selling_price", "unit_cost"
+    ]
+
+    for col in numeric_columns:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    issues = []
+
+    if df["date"].isna().any():
+        issues.append(
+            f"{df['date'].isna().sum()} rows have invalid dates."
+        )
+
+    invalid_numbers = df[numeric_columns].isna().any(axis=1)
+    if invalid_numbers.any():
+        issues.append(
+            f"{invalid_numbers.sum()} rows have missing or invalid numbers."
+        )
+
+    negative_values = (
+        (df["units_sold"] < 0)
+        | (df["selling_price"] < 0)
+        | (df["unit_cost"] < 0)
+    ).fillna(False)
+
+    if negative_values.any():
+        issues.append(
+            f"{negative_values.sum()} rows contain negative values; "
+            "check returns or data-entry errors."
+        )
+
+    duplicate_count = int(df.duplicated().sum())
+    if duplicate_count:
+        issues.append(
+            f"{duplicate_count} exact duplicate rows found. "
+            "Review them before removing anything."
+        )
+
+    # Keep the original rows for review; don't silently delete data.
+    return df, issues
+
+
+def calculate_business_metrics(df):
+    """Calculate core sales and estimated gross-profit metrics."""
+    df = df.copy()
+
+    df["revenue"] = df["units_sold"] * df["selling_price"]
+    df["estimated_cost"] = df["units_sold"] * df["unit_cost"]
+    df["estimated_gross_profit"] = (
+        df["revenue"] - df["estimated_cost"]
+    )
+
+    total_revenue = df["revenue"].sum()
+    total_profit = df["estimated_gross_profit"].sum()
+
+    metrics = {
+        "total_revenue": float(total_revenue),
+        "estimated_gross_profit": float(total_profit),
+        "units_sold": float(df["units_sold"].sum()),
+        "gross_margin_pct": (
+            float(total_profit / total_revenue * 100)
+            if total_revenue > 0 else 0.0
+        ),
+    }
+
+    return df, metrics
+
+
+def generate_business_warnings(df, metrics):
+    """Generate transparent, rule-based business warnings."""
+    warnings = []
+
+    if metrics["total_revenue"] <= 0:
+        warnings.append(
+            "Revenue is zero or negative. Check the uploaded data."
+        )
+
+    if metrics["estimated_gross_profit"] < 0:
+        warnings.append(
+            "Estimated gross profit is negative. Review prices and costs."
+        )
+
+    if 0 < metrics["gross_margin_pct"] < 10:
+        warnings.append(
+            "Gross margin is below 10%. Review product costs and pricing."
+        )
+
+    if "stock_on_hand" in df.columns:
+        stock = pd.to_numeric(
+            df["stock_on_hand"], errors="coerce"
+        )
+
+        if (stock < 0).any():
+            warnings.append(
+                "Negative stock values detected. Check inventory records."
+            )
+
+        if (stock == 0).any():
+            warnings.append(
+                "Some records show zero stock. Check for potential stockouts."
+            )
+
+    if "product" in df.columns:
+        product_count = df["product"].nunique(dropna=True)
+        if product_count == 0:
+            warnings.append(
+                "No identifiable products were found in the dataset."
+            )
+
+    if not warnings:
+        warnings.append(
+            "No basic rule-based warnings were triggered. "
+            "This does not guarantee that the data or business is healthy."
+        )
+
+    return warnings
+
+
 st.set_page_config(
     page_title="Business Intelligence AI",
     page_icon="📊",
