@@ -2,6 +2,13 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from io import BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+)
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
 
 def validate_sales_data(df):
     """Validate and prepare an uploaded sales dataset."""
@@ -136,7 +143,91 @@ def generate_business_warnings(df, metrics):
 
     return warnings
 
+def create_pdf_report(df, daily):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
 
+    story.append(
+        Paragraph("Business Intelligence AI Report", styles["Title"])
+    )
+    story.append(Spacer(1, 18))
+    story.append(
+        Paragraph("Sales and Profitability Summary", styles["Heading2"])
+    )
+    story.append(Spacer(1, 10))
+
+    total_revenue = df["revenue"].sum()
+    total_units = df["units_sold"].sum()
+    total_profit = df["gross_profit"].sum()
+
+    summary = [
+        ["Metric", "Value"],
+        ["Total Revenue", f"{total_revenue:,.2f}"],
+        ["Units Sold", f"{total_units:,.0f}"],
+        ["Gross Profit", f"{total_profit:,.2f}"],
+        ["Daily Records", str(len(daily))]
+    ]
+
+    table = Table(summary, colWidths=[220, 220])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#243B64")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+        ("PADDING", (0, 0), (-1, -1), 8),
+    ]))
+
+    story.append(table)
+    story.append(Spacer(1, 20))
+
+    if "product" in df.columns:
+        story.append(
+            Paragraph("Product Performance", styles["Heading2"])
+        )
+        story.append(Spacer(1, 8))
+
+        products = (
+            df.groupby("product", dropna=False)
+            .agg(
+                units_sold=("units_sold", "sum"),
+                revenue=("revenue", "sum"),
+                gross_profit=("gross_profit", "sum")
+            )
+            .reset_index()
+            .sort_values("revenue", ascending=False)
+        )
+
+        product_data = [
+            ["Product", "Units", "Revenue", "Gross Profit"]
+        ]
+
+        for _, row in products.iterrows():
+            product_data.append([
+                str(row["product"])[:30],
+                f'{row["units_sold"]:,.0f}',
+                f'{row["revenue"]:,.2f}',
+                f'{row["gross_profit"]:,.2f}'
+            ])
+
+        product_table = Table(
+            product_data,
+            repeatRows=1,
+            colWidths=[130, 70, 110, 110]
+        )
+        product_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#243B64")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ("PADDING", (0, 0), (-1, -1), 6),
+        ]))
+
+        story.append(product_table)
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
 st.set_page_config(
     page_title="Business Intelligence AI",
     page_icon="📊",
@@ -554,7 +645,17 @@ if page == "Executive Overview":
         use_container_width=True,
         hide_index=True
     )
+    st.markdown("### Download Business Report")
 
+    pdf_report = create_pdf_report(df, daily)
+
+    st.download_button(
+        label="📄 Download PDF Report",
+        data=pdf_report,
+        file_name="business_intelligence_report.pdf",
+        mime="application/pdf",
+        key="download_business_report"
+    )
 # ---------- SALES ANALYSIS ----------
 elif page == "Sales Analysis":
     st.markdown("## Sales Analysis")
