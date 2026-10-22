@@ -336,7 +336,7 @@ if uploaded_file is not None:
         if missing:
             st.sidebar.error("Missing columns: " + ", ".join(missing))
         else:
-            candidate = uploaded[required].copy()
+            candidate = uploaded.copy()
             candidate["date"] = pd.to_datetime(
                 candidate["date"], errors="coerce"
             )
@@ -389,6 +389,96 @@ daily = (
 
 def money(value):
     return f"₹{value:,.0f}"
+ # ---------- PRODUCT PERFORMANCE ----------
+if "product" in df.columns:
+    st.subheader("Product Performance")
+
+    product_summary = (
+        df.groupby("product", dropna=False)
+        .agg(
+            units_sold=("units_sold", "sum"),
+            revenue=("revenue", "sum"),
+            gross_profit=("gross_profit", "sum")
+        )
+        .reset_index()
+        .sort_values("revenue", ascending=False)
+    )
+
+    st.dataframe(
+        product_summary,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.bar_chart(
+        product_summary.set_index("product")[["revenue"]]
+    )
+else:
+    st.info(
+        "Upload a CSV with a 'product' column to unlock product-level analytics."
+    )
+
+
+# ---------- INVENTORY INSIGHTS ----------
+if "stock_on_hand" in df.columns:
+    st.subheader("Inventory Insights")
+
+    inventory = df.copy()
+    inventory["stock_on_hand"] = pd.to_numeric(
+        inventory["stock_on_hand"], errors="coerce"
+    )
+    inventory = inventory.dropna(subset=["stock_on_hand"])
+
+    if not inventory.empty:
+        if "product" in inventory.columns:
+            inventory_summary = (
+                inventory.groupby("product", dropna=False)
+                .agg(
+                    stock_on_hand=("stock_on_hand", "min"),
+                    units_sold=("units_sold", "sum")
+                )
+                .reset_index()
+            )
+        else:
+            inventory_summary = pd.DataFrame({
+                "product": ["All uploaded records"],
+                "stock_on_hand": [inventory["stock_on_hand"].min()],
+                "units_sold": [inventory["units_sold"].sum()]
+            })
+
+        inventory_summary["inventory_status"] = (
+            inventory_summary["stock_on_hand"].apply(
+                lambda stock: (
+                    "Out of stock" if stock <= 0
+                    else "Low stock" if stock <= 10
+                    else "In stock"
+                )
+            )
+        )
+
+        st.dataframe(
+            inventory_summary,
+            use_container_width=True,
+            hide_index=True
+        )
+
+        low_stock = inventory_summary[
+            inventory_summary["inventory_status"].isin(
+                ["Out of stock", "Low stock"]
+            )
+        ]
+
+        if not low_stock.empty:
+            st.warning(
+                f"{len(low_stock)} product(s) need an inventory check."
+            )
+        else:
+            st.success("No products fall below the low-stock threshold.")
+else:
+    st.info(
+        "Upload a CSV with a 'stock_on_hand' column to enable inventory insights."
+    )
+
 
 # ---------- HEADER ----------
 st.markdown("""
