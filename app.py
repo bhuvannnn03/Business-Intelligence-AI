@@ -393,16 +393,24 @@ def money(value):
 if "product" in df.columns:
     st.subheader("Product Performance")
 
+  
     product_summary = (
         df.groupby("product", dropna=False)
         .agg(
             units_sold=("units_sold", "sum"),
             revenue=("revenue", "sum"),
+            estimated_cost=("estimated_cost", "sum"),
             gross_profit=("gross_profit", "sum")
         )
         .reset_index()
         .sort_values("revenue", ascending=False)
     )
+
+    product_summary["gross_margin_pct"] = (
+        product_summary["gross_profit"]
+        / product_summary["revenue"].replace(0, np.nan)
+        * 100
+    ).fillna(0)
 
     st.dataframe(
         product_summary,
@@ -410,9 +418,13 @@ if "product" in df.columns:
         hide_index=True
     )
 
+   
     st.bar_chart(
-        product_summary.set_index("product")[["revenue"]]
+        product_summary.set_index("product")[
+            ["revenue", "gross_profit"]
+        ]
     )
+
 else:
     st.info(
         "Upload a CSV with a 'product' column to unlock product-level analytics."
