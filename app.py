@@ -35,27 +35,42 @@ st.markdown(
     """
     <style>
     :root { color-scheme: dark; }
-    .stApp { background: #0b1220; color: #e7edf7; }
-    [data-testid="stHeader"] { background: rgba(11,18,32,0.92); }
-    [data-testid="stSidebar"] { background: #0e1728; border-right: 1px solid #243249; }
-    [data-testid="stSidebar"] * { color: #dce5f3; }
-    .block-container { padding-top: 1.5rem; padding-bottom: 2.5rem; max-width: 1500px; }
-    h1, h2, h3 { color: #f4f7fc !important; letter-spacing: -0.025em; }
-    p, label, .stMarkdown { color: #c3cede; }
-    [data-testid="stMetric"] { background: linear-gradient(145deg,#141f32,#111b2c); border: 1px solid #293750; padding: 17px 18px; border-radius: 14px; }
-    [data-testid="stMetricLabel"] { color: #a9b8cd !important; }
-    [data-testid="stMetricValue"] { color: #f7faff !important; }
-    [data-testid="stMetricDelta"] { font-size: .82rem; }
-    div[data-testid="stDataFrame"] { border: 1px solid #293750; border-radius: 12px; overflow: hidden; }
-    div[data-testid="stPlotlyChart"], div[data-testid="stVegaLiteChart"] { background: #111b2c; border: 1px solid #293750; border-radius: 14px; padding: 8px; }
-    div.stButton > button, div.stDownloadButton > button { border-radius: 9px; border: 1px solid #3b82f6; background: #2563eb; color: white; font-weight: 600; padding: .55rem 1rem; }
-    div.stButton > button:hover, div.stDownloadButton > button:hover { background: #1d4ed8; border-color: #60a5fa; color: white; }
-    .ic-eyebrow { color: #7daaff; font-size: .76rem; text-transform: uppercase; letter-spacing: .13em; font-weight: 700; margin-bottom: .35rem; }
-    .ic-subtitle { color: #9eacc2; margin-top: -.25rem; }
-    .ic-panel { background: #111b2c; border: 1px solid #293750; border-radius: 14px; padding: 18px 20px; margin-bottom: 12px; }
-    .ic-alert { background: #18263a; border-left: 3px solid #60a5fa; border-radius: 8px; padding: 12px 15px; margin: 8px 0; }
-    .ic-muted { color: #91a1b8; font-size: .88rem; }
-    hr { border-color: #293750 !important; }
+    .stApp { background: #090e18; color: #e6ebf3; }
+    [data-testid="stHeader"] { background: rgba(9,14,24,.94); }
+    [data-testid="stToolbar"] { right: 1rem; }
+    [data-testid="stSidebar"] { background: #0b1220; border-right: 1px solid #202b3c; }
+    [data-testid="stSidebar"] > div:first-child { padding-top: 1.15rem; }
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: #9ba8bb; }
+    [data-testid="stSidebar"] hr { margin: .85rem 0; border-color: #202b3c !important; }
+    .block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1540px; }
+    h1, h2, h3 { color: #f4f6fa !important; letter-spacing: -.035em; }
+    h1 { font-weight: 650 !important; }
+    h2, h3 { font-weight: 600 !important; }
+    p, label, .stMarkdown { color: #c2cad7; }
+    [data-testid="stMetric"] { background: linear-gradient(145deg,#111b2b,#0e1725); border: 1px solid #253247; padding: 18px 19px; border-radius: 13px; }
+    [data-testid="stMetricLabel"] { color: #99a8bc !important; font-size: .82rem; }
+    [data-testid="stMetricValue"] { color: #f4f7fb !important; font-weight: 650; letter-spacing: -.035em; }
+    [data-testid="stMetricDelta"] { font-size: .8rem; }
+    div[data-testid="stDataFrame"] { border: 1px solid #253247; border-radius: 11px; overflow: hidden; }
+    div[data-testid="stPlotlyChart"], div[data-testid="stVegaLiteChart"] { background: #0e1725; border: 1px solid #253247; border-radius: 13px; padding: 9px; }
+    div.stButton > button, div.stDownloadButton > button { border-radius: 8px; border: 1px solid #5376bd; background: #3156a6; color: #fff; font-weight: 600; padding: .58rem 1rem; transition: all .15s ease; }
+    div.stButton > button:hover, div.stDownloadButton > button:hover { background: #3a64bd; border-color: #7695d4; color: #fff; }
+    .ic-eyebrow { color: #7f9edb; font-size: .7rem; text-transform: uppercase; letter-spacing: .16em; font-weight: 700; margin-bottom: .45rem; }
+    .ic-subtitle { color: #98a6ba; margin-top: -.45rem; margin-bottom: 1.25rem; font-size: .98rem; }
+    .ic-panel { background: #0e1725; border: 1px solid #253247; border-radius: 13px; padding: 18px 20px; margin-bottom: 12px; }
+    .ic-alert { background: #101b2b; border: 1px solid #25364c; border-left: 3px solid #6b8dca; border-radius: 8px; padding: 12px 15px; margin: 8px 0; color: #cbd4e1; }
+    .ic-alert b { color: #eef3fa; font-size: .9rem; }
+    .ic-muted { color: #8d9bb0; font-size: .86rem; }
+    [data-testid="stSidebar"] div[role="radiogroup"] { gap: 4px; }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label { background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 9px 11px; margin: 0; min-height: 38px; transition: background .15s ease, border-color .15s ease; }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label:hover { background: #121d2d; border-color: #253247; }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) { background: #17253a; border-color: #2c4262; box-shadow: inset 2px 0 0 #8aa6dc; }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) p { color: #f1f5fb !important; font-weight: 600; }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label p { font-size: .88rem; color: #aab6c7; margin: 0; }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child { display: none; }
+    [data-testid="stFileUploader"] section { border-color: #2a374b; background: #0e1725; }
+    [data-testid="stDateInput"] input, [data-testid="stTextInput"] input, [data-testid="stSelectbox"] [data-baseweb="select"] { background: #0e1725; }
+    hr { border-color: #253247 !important; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -440,14 +455,21 @@ def render_home(df, daily, products, forecast, avg_units, avg_revenue):
 
 def main():
     with st.sidebar:
-        st.markdown("<div style='padding:8px 0 18px 0'><div style='font-size:11px;letter-spacing:2px;color:#7daaff;font-weight:800'>NURTURA</div><div style='font-size:22px;font-weight:750;color:#f4f7fc;margin-top:4px'>Business workspace</div><div style='font-size:12px;color:#91a1b8;margin-top:4px'>Intelligence for better decisions</div></div>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style="padding:4px 2px 17px 2px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div style="width:34px;height:34px;border:1px solid #405477;border-radius:9px;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#1d2b43,#101a2a);color:#dbe6fb;font-size:17px;font-weight:700">N</div>
+            <div><div style="font-size:14px;letter-spacing:2.2px;color:#f1f5fb;font-weight:750">NURTURA</div><div style="font-size:10px;letter-spacing:1.1px;color:#8190a7;margin-top:3px;text-transform:uppercase">Business intelligence</div></div>
+          </div>
+          <div style="font-size:10px;letter-spacing:1.6px;color:#72839c;font-weight:700;text-transform:uppercase;margin-bottom:8px">Workspace</div>
+        </div>
+        """, unsafe_allow_html=True)
+        page = st.radio("Navigate", NAV_ITEMS, label_visibility="collapsed")
         st.divider()
-        page = st.radio("NAVIGATION", NAV_ITEMS, label_visibility="visible")
-        st.divider()
-        st.markdown("**DATA SOURCE**")
-        uploaded = st.file_uploader("Upload sales CSV", type=["csv"], help="Required: date, units_sold, selling_price, unit_cost. Optional: product, stock_on_hand, order_id.")
-        use_demo = st.toggle("Use illustrative demo data", value=uploaded is None, help="Demo data is synthetic and should not be mistaken for actual business records.")
-        st.caption("CSV files are processed by this app session. This prototype does not provide permanent, multi-user data storage.")
+        st.markdown("<div style='font-size:10px;letter-spacing:1.5px;color:#72839c;font-weight:700;text-transform:uppercase;margin:3px 0 9px'>Data source</div>", unsafe_allow_html=True)
+        uploaded = st.file_uploader("Sales data · CSV", type=["csv"], help="Required: date, units_sold, selling_price, unit_cost. Optional: product, stock_on_hand, order_id.")
+        use_demo = st.toggle("Load sample workspace", value=uploaded is None, help="Uses synthetic demonstration data, not real business records.")
+        st.caption("Uploads are processed in this app session. Persistent storage and separate company workspaces are not enabled yet.")
 
     raw = None
     validation_notes = []
@@ -484,7 +506,7 @@ def main():
 
     # Global filters affect analytics/reporting consistently.
     with st.sidebar:
-        st.markdown("**FILTERS**")
+        st.markdown("<div style='font-size:10px;letter-spacing:1.5px;color:#72839c;font-weight:700;text-transform:uppercase;margin:8px 0 9px'>Filters</div>", unsafe_allow_html=True)
         min_date = daily["date"].min().date()
         max_date = daily["date"].max().date()
         date_range = st.date_input("Date range", value=(min_date, max_date), min_value=min_date, max_value=max_date)
