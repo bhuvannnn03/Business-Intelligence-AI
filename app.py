@@ -628,8 +628,76 @@ elif page == "Forecast & Insights":
             color="#3984ff"
         )
         st.dataframe(forecast, use_container_width=True, hide_index=True)
+        
+        st.markdown("### Historical Forecast Accuracy")
+        if len(daily) >= 14:
+            units = daily["units_sold"].to_numpy(dtype=float)
+            test_start = len(units) - 7
 
-        st.markdown("### Business Insights")
+            actual = units[test_start:]
+            moving_predictions = []
+            weekly_predictions = []
+
+            for i in range(7):
+                past = units[:test_start + i]
+
+                moving_predictions.append(
+                    float(np.mean(past[-7:]))
+                )
+
+                weekly_predictions.append(
+                    float(units[test_start + i - 7])
+                )
+
+            moving_mae = np.mean(
+                np.abs(actual - np.array(moving_predictions))
+            )
+
+            weekly_mae = np.mean(
+                np.abs(actual - np.array(weekly_predictions))
+            )
+
+            accuracy_results = pd.DataFrame({
+                "Forecast Method": [
+                    "7-day moving average",
+                    "Same weekday last week"
+                ],
+                "Mean Absolute Error (units)": [
+                    round(moving_mae, 2),
+                    round(weekly_mae, 2)
+                ]
+            })
+
+            st.dataframe(
+                accuracy_results,
+                use_container_width=True,
+                hide_index=True
+            )
+
+            if moving_mae < weekly_mae:
+                st.success(
+                    "The 7-day moving average performed better "
+                    "on this historical test."
+                )
+            elif weekly_mae < moving_mae:
+                st.success(
+                    "The same-weekday-last-week method performed "
+                    "better on this historical test."
+                )
+            else:
+                st.info("Both methods had the same MAE on this test.")
+
+            st.caption(
+                "Lower MAE means smaller average prediction errors. "
+                "This tests the last seven recorded days; it does not "
+                "guarantee future forecast accuracy."
+            )
+        else:
+            st.info(
+                "Upload at least 14 daily records to compare "
+                "forecast methods."
+            )
+            st.markdown("### Business Insights")
 
         if len(daily) >= 14:
             recent_revenue = daily.tail(7)["revenue"].mean()
