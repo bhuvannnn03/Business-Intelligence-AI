@@ -32,78 +32,65 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# NURTURA reference-inspired dark BI interface
+# NURTURA — reference-inspired dark BI interface
 st.markdown(
-    """
+    r"""
     <style>
     :root { color-scheme: dark; }
-    .stApp { background: #171f32; color: #edf1fb; }
-    [data-testid="stHeader"] { background: rgba(23,31,50,.98); }
+    html, body, [class*="css"] { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .stApp { background: #1b2437; color: #e9edfa; }
+    [data-testid="stHeader"] { background: rgba(27,36,55,.96); height: 2.6rem; }
     [data-testid="stToolbar"] { right: 1rem; }
-    [data-testid="stSidebar"] { background: #111c2d; border-right: 1px solid #34415b; min-width: 300px; }
-    [data-testid="stSidebar"] > div:first-child { padding: 1.1rem 1rem 1.5rem; }
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: #aab5cc; }
-    [data-testid="stSidebar"] hr, hr { border-color: #34415b !important; }
-    .block-container { padding-top: 1.35rem; padding-bottom: 2rem; max-width: 1700px; }
-    h1, h2, h3 { color: #f4f6fc !important; letter-spacing: -.035em; }
-    h1 { font-size: clamp(1.8rem, 2.3vw, 2.6rem) !important; font-weight: 700 !important; }
-    h2, h3 { font-weight: 620 !important; }
-    h3 { font-size: 1.12rem !important; }
-    p, label, .stMarkdown { color: #c7d0e2; }
-    [data-testid="stMetric"] { background: #19263a; border: 1px solid #303e58; padding: 17px 18px; border-radius: 14px; min-height: 112px; box-shadow: 0 8px 20px rgba(0,0,0,.10); }
-    [data-testid="stMetricLabel"] { color: #b3bfd5 !important; font-size: .82rem; }
-    [data-testid="stMetricValue"] { color: #f4f6fc !important; font-size: clamp(1.35rem, 1.7vw, 2rem) !important; font-weight: 700; letter-spacing: -.035em; }
-    [data-testid="stMetricDelta"] { font-size: .8rem; }
-    div[data-testid="stDataFrame"] { border: 1px solid #303e58; border-radius: 12px; overflow: hidden; background:#19263a; }
-    div[data-testid="stPlotlyChart"] { background: #19263a; border: 1px solid #303e58; border-radius: 14px; padding: 8px; overflow: hidden; }
-    div.stButton > button, div.stDownloadButton > button { border-radius: 9px; border: 1px solid #596be4; background: #4d54da; color: #fff; font-weight: 650; padding: .58rem 1rem; transition: all .15s ease; }
-    div.stButton > button:hover, div.stDownloadButton > button:hover { background: #6268ef; border-color: #969cff; color: #fff; }
-    .ic-eyebrow { color: #a6a3ff; font-size: .68rem; text-transform: uppercase; letter-spacing: .17em; font-weight: 800; margin-bottom: .45rem; }
-    .ic-subtitle { color: #aab7cf; margin-top: -.35rem; margin-bottom: 1.15rem; font-size: .95rem; }
-    .ic-panel { background: #19263a; border: 1px solid #303e58; border-radius: 14px; padding: 18px 20px; margin-bottom: 12px; }
-    .ic-alert { background: #1b2940; border: 1px solid #344561; border-left: 3px solid #7975ff; border-radius: 10px; padding: 12px 15px; margin: 8px 0; color: #cbd5e7; }
-    .ic-alert b { color: #f2f4fb; font-size: .9rem; }
-    .ic-muted { color: #8d9bb0; font-size: .86rem; }
+    .block-container { max-width: 1680px; padding-top: 1.35rem; padding-bottom: 2.2rem; padding-left: 2rem; padding-right: 2rem; }
+    /* Main navigation panel */
+    [data-testid="stSidebar"] { background: #162235; border-right: 1px solid #34415d; min-width: 330px; width: 330px; }
+    [data-testid="stSidebar"] > div:first-child { padding-top: 1rem; padding-left: 1.05rem; padding-right: 1.05rem; }
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: #aab5cb; }
+    [data-testid="stSidebar"] hr { margin: .8rem 0; border-color: #35415b !important; }
+    /* Decorative icon rail, matching the reference layout */
+    [data-testid="stSidebar"]::before { content: "N\A▦\A♧\A▤\A⌁\A◎\A♧\A⌂\A⚙"; white-space: pre; line-height: 3.15rem; text-align: center; color: #aaa5ff; font-weight: 700; font-size: 1rem; position: fixed; z-index: 999; left: 8px; top: 22px; bottom: 20px; width: 48px; padding-top: 16px; border: 1px solid #33415d; border-radius: 18px; background: #111b2d; box-shadow: 0 12px 30px #10182a66; }
+    [data-testid="stSidebar"] > div:first-child { padding-left: 3.75rem; }
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 { color: #f4f5ff; }
     [data-testid="stSidebar"] div[role="radiogroup"] { gap: 5px; }
-    [data-testid="stSidebar"] div[role="radiogroup"] > label { background: transparent; border: 1px solid transparent; border-radius: 9px; padding: 8px 10px; margin: 0; min-height: 39px; transition: background .15s ease; }
-    [data-testid="stSidebar"] div[role="radiogroup"] > label:hover { background: #202d48; border-color: #354564; }
-    [data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) { background: #303779; border-color: #454caa; box-shadow: inset 3px 0 0 #a69bff; }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label { background: transparent; border: 1px solid transparent; border-radius: 9px; padding: 8px 10px; margin: 0; min-height: 38px; }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label:hover { background: #222f4b; border-color: #39476a; }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) { background: #303b82; border-color: #4c58ad; box-shadow: inset 3px 0 0 #a39bff; }
     [data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) p { color: #fff !important; font-weight: 650; }
-    [data-testid="stSidebar"] div[role="radiogroup"] > label p { font-size: .88rem; color: #aab6cb; margin: 0; }
+    [data-testid="stSidebar"] div[role="radiogroup"] > label p { font-size: .9rem; color: #aeb8ce; margin: 0; }
     [data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child { display: none; }
-    [data-testid="stFileUploader"] section { border-color: #35435e; background: #19263a; border-radius: 12px; }
-    [data-testid="stDateInput"] input, [data-testid="stTextInput"] input, [data-testid="stSelectbox"] [data-baseweb="select"] { background: #19263a; border-color:#35435e; }
-    [data-testid="stAlert"] { border-radius: 10px; }
-    @media (max-width: 900px) { .block-container { padding: 1rem 1rem 2rem; } [data-testid="stSidebar"] { min-width: unset; } }
+    /* Header */
+    .nt-header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding: 5px 0 18px; border-bottom:1px solid #303b54; margin-bottom:20px; }
+    .nt-brand { color:#f5f6ff; font-size:1.35rem; font-weight:750; letter-spacing:-.04em; }
+    .nt-brand span { color:#a49aff; }
+    .nt-header-meta { color:#9ca9c3; font-size:.82rem; }
+    .nt-eyebrow { color:#a29aff; font-size:.68rem; text-transform:uppercase; letter-spacing:.18em; font-weight:800; margin-bottom:.5rem; }
+    h1, h2, h3 { color:#f2f4ff !important; letter-spacing:-.035em; }
+    h1 { font-size:2.1rem !important; font-weight:750 !important; }
+    h2, h3 { font-weight:650 !important; }
+    p, label, .stMarkdown { color:#c4cce0; }
+    [data-testid="stMetric"] { background:linear-gradient(145deg,#202d44,#19263a); border:1px solid #35435f; padding:16px 18px; border-radius:15px; min-height:105px; box-shadow:0 8px 18px #10182a24; }
+    [data-testid="stMetricLabel"] { color:#b5bfd5 !important; font-size:.82rem; }
+    [data-testid="stMetricValue"] { color:#f2f4ff !important; font-size:1.65rem !important; font-weight:750; letter-spacing:-.04em; }
+    [data-testid="stMetricDelta"] { font-size:.78rem; }
+    div[data-testid="stDataFrame"] { border:1px solid #34415c; border-radius:12px; overflow:hidden; }
+    div[data-testid="stPlotlyChart"] { background:#19263a; border:1px solid #34415c; border-radius:14px; padding:8px; overflow:hidden; }
+    div.stButton > button, div.stDownloadButton > button { border-radius:9px; border:1px solid #545fc0; background:#454fc0; color:#fff; font-weight:650; padding:.55rem .9rem; }
+    div.stButton > button:hover, div.stDownloadButton > button:hover { background:#5b65d5; border-color:#8e95ff; color:#fff; }
+    .ic-eyebrow { color:#a29aff; font-size:.68rem; text-transform:uppercase; letter-spacing:.17em; font-weight:800; margin-bottom:.45rem; }
+    .ic-subtitle { color:#a8b4cc; margin-top:-.45rem; margin-bottom:1.25rem; font-size:.95rem; }
+    .ic-panel { background:#19263a; border:1px solid #34415c; border-radius:14px; padding:17px 19px; margin-bottom:12px; }
+    .ic-alert { background:#202d44; border:1px solid #394966; border-left:3px solid #8c83ff; border-radius:10px; padding:12px 15px; margin:8px 0; color:#cbd4e7; }
+    .ic-alert b { color:#f3f4ff; font-size:.9rem; }
+    .ic-muted { color:#8f9db8; font-size:.84rem; }
+    [data-testid="stFileUploader"] section { border-color:#394966; background:#1b2940; border-radius:12px; }
+    [data-testid="stDateInput"] input, [data-testid="stTextInput"] input, [data-testid="stSelectbox"] [data-baseweb="select"], [data-testid="stMultiSelect"] [data-baseweb="select"] { background:#202d44; border-color:#3c4966; }
+    [data-testid="stToggle"] label p { color:#d2d8e8 !important; }
+    hr { border-color:#35415d !important; }
+    @media (max-width: 900px) { .block-container { padding-left:1rem; padding-right:1rem; } [data-testid="stSidebar"] { min-width:280px; width:280px; } }
     </style>
     """,
     unsafe_allow_html=True,
 )
-
-PLOT_COLORS = ["#7774ff", "#5c82ff", "#a18bff", "#54d6bd", "#8e9be8"]
-PLOT_LAYOUT = dict(
-    template="plotly_dark", paper_bgcolor="#19263a", plot_bgcolor="#19263a",
-    font=dict(family="Inter, Segoe UI, sans-serif", color="#c3cce0", size=11),
-    margin=dict(l=18, r=18, t=24, b=18), height=310,
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-    xaxis=dict(showgrid=False, zeroline=False, linecolor="#34415b"),
-    yaxis=dict(gridcolor="#34415b", zeroline=False, linecolor="#34415b"),
-)
-
-def line_figure(data, x, y, labels=None):
-    fig = px.line(data, x=x, y=y, color_discrete_sequence=PLOT_COLORS, labels=labels)
-    fig.update_traces(line=dict(width=2.6), mode="lines")
-    fig.update_layout(**PLOT_LAYOUT)
-    return fig
-
-def bar_figure(data, x, y, labels=None, horizontal=False):
-    if horizontal:
-        fig = px.bar(data, x=y, y=x, orientation="h", color_discrete_sequence=PLOT_COLORS, labels=labels)
-    else:
-        fig = px.bar(data, x=x, y=y, color_discrete_sequence=PLOT_COLORS, labels=labels)
-    fig.update_traces(marker_line_width=0, marker_color="#6675f5", opacity=.95)
-    fig.update_layout(**PLOT_LAYOUT)
-    return fig
 
 REQUIRED_COLUMNS = ["date", "units_sold", "selling_price", "unit_cost"]
 NAV_ITEMS = [
@@ -424,6 +411,39 @@ def build_pdf_report(df, daily, forecast, accuracy, business_name):
     return buffer.getvalue()
 
 
+def styled_line_chart(data, x, y, title=None):
+    """Consistent dark-mode Plotly line chart with explicit axes."""
+    fig = px.line(data, x=x, y=y, title=title, markers=False, color_discrete_sequence=["#7774ff", "#55b8ff", "#72dfbd"])
+    fig.update_layout(
+        height=310, margin=dict(l=18, r=18, t=28 if title else 12, b=18),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#aeb9d0", family="Inter, Segoe UI, sans-serif", size=11),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        hovermode="x unified",
+    )
+    fig.update_xaxes(showgrid=False, linecolor="#34415d", tickfont=dict(color="#8e9bb6"), title_text="")
+    fig.update_yaxes(gridcolor="#303c55", zerolinecolor="#303c55", tickfont=dict(color="#8e9bb6"), title_text="")
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False, "responsive": True})
+
+
+def styled_bar_chart(data, x, y, horizontal=False, title=None, color="#5d6cf4"):
+    """Consistent dark-mode bar chart; explicit product and value fields avoid axis inference bugs."""
+    if horizontal:
+        fig = px.bar(data, x=y, y=x, orientation="h", title=title, color_discrete_sequence=[color], text_auto=".2s")
+        fig.update_yaxes(categoryorder="total ascending")
+    else:
+        fig = px.bar(data, x=x, y=y, title=title, color_discrete_sequence=[color], text_auto=False)
+    fig.update_layout(
+        height=310, margin=dict(l=18, r=18, t=28 if title else 12, b=18),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#aeb9d0", family="Inter, Segoe UI, sans-serif", size=11),
+        showlegend=False, bargap=.34,
+    )
+    fig.update_xaxes(showgrid=False, linecolor="#34415d", tickfont=dict(color="#8e9bb6"), title_text="")
+    fig.update_yaxes(gridcolor="#303c55", zerolinecolor="#303c55", tickfont=dict(color="#8e9bb6"), title_text="")
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False, "responsive": True})
+
+
 def section_heading(eyebrow, title, subtitle=None):
     st.markdown(f'<div class="ic-eyebrow">{eyebrow}</div>', unsafe_allow_html=True)
     st.title(title)
@@ -443,13 +463,14 @@ def render_home(df, daily, products, forecast, avg_units, avg_revenue):
     cols[2].metric("Gross margin", f"{margin:.1f}%")
     cols[3].metric("Units sold", number(units))
 
-    left, right = st.columns([1.65, 1])
+    left, right = st.columns([1.65, 1], gap="medium")
     with left:
-        st.markdown("### Revenue performance")
-        st.plotly_chart(line_figure(daily, "date", "revenue", {"date": "Date", "revenue": "Revenue"}), use_container_width=True, config={"displayModeBar": False})
+        st.markdown("### Sales overview")
+        styled_line_chart(daily, "date", "revenue")
     with right:
         st.markdown("### Revenue by product")
-        st.plotly_chart(bar_figure(products.head(7), "product", "revenue", {"product": "Product", "revenue": "Revenue"}, horizontal=True), use_container_width=True, config={"displayModeBar": False})
+        # Explicit product categories and revenue values keep the chart correctly mapped.
+        styled_bar_chart(products.head(7).copy(), "product", "revenue", horizontal=True, color="#7774ff")
         st.caption("Ranked by recorded revenue.")
 
     st.markdown("### Business signals")
@@ -488,7 +509,7 @@ def main():
         <div style="padding:4px 2px 17px 2px">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
             <div style="width:34px;height:34px;border:1px solid #405477;border-radius:9px;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#1d2b43,#101a2a);color:#dbe6fb;font-size:17px;font-weight:700">N</div>
-            <div><div style="font-size:14px;letter-spacing:2.2px;color:#f1f5fb;font-weight:750">NURTURA</div><div style="font-size:10px;letter-spacing:1.1px;color:#8190a7;margin-top:3px;text-transform:uppercase">Business intelligence</div></div>
+            <div><div style="font-size:14px;letter-spacing:2.2px;color:#f1f5fb;font-weight:750">NURTURA <span style="color:#a39aff">✦</span></div><div style="font-size:10px;letter-spacing:1.1px;color:#8190a7;margin-top:3px;text-transform:uppercase">Business intelligence</div></div>
           </div>
           <div style="font-size:10px;letter-spacing:1.6px;color:#72839c;font-weight:700;text-transform:uppercase;margin-bottom:8px">Workspace</div>
         </div>
@@ -504,7 +525,16 @@ def main():
     validation_notes = []
     if uploaded is not None:
         try:
-            raw = pd.read_csv(uploaded)
+            if uploaded.size > 10 * 1024 * 1024:
+                st.error("Upload rejected: CSV files must be 10 MB or smaller.")
+                st.stop()
+            raw = pd.read_csv(uploaded, nrows=100_001)
+            if len(raw) > 100_000:
+                st.error("Upload rejected: CSV files may contain at most 100,000 rows.")
+                st.stop()
+            if len(raw.columns) > 50:
+                st.error("Upload rejected: CSV files may contain at most 50 columns.")
+                st.stop()
         except Exception as exc:
             st.error(f"Could not read the CSV file: {exc}")
             st.stop()
@@ -526,8 +556,6 @@ def main():
         st.warning(note)
     if uploaded is None and use_demo:
         st.info("Demo mode: the current figures are synthetic examples, not a real business's results.")
-
-    st.markdown("<div style='display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 13px;margin:0 0 14px;border:1px solid #303e58;border-radius:12px;background:#19263a'><div style='font-size:12px;letter-spacing:1.5px;font-weight:800;color:#f0f2fc'>NURTURA <span style='color:#a6a3ff'>/</span> BUSINESS INTELLIGENCE</div><div style='font-size:11px;color:#9daac3'>LIVE WORKSPACE · FILTERED DATA</div></div>", unsafe_allow_html=True)
 
     daily = daily_summary(df)
     products = product_summary(df)
@@ -560,6 +588,14 @@ def main():
     forecast, avg_units, avg_revenue = forecast_next_week(daily)
     accuracy = historical_forecast_test(daily)
 
+    # Compact custom dashboard header inspired by the supplied reference.
+    header_left, header_right = st.columns([2.4, 1], vertical_alignment="center")
+    with header_left:
+        st.markdown('<div class="nt-brand">NURTURA <span>✦</span></div><div class="nt-header-meta">BUSINESS INTELLIGENCE WORKSPACE</div>', unsafe_allow_html=True)
+    with header_right:
+        st.markdown('<div style="text-align:right;color:#a7b3cb;font-size:.82rem;padding-top:6px">LIVE WORKSPACE &nbsp; • &nbsp; SESSION DATA</div>', unsafe_allow_html=True)
+    st.markdown('<div style="height:1px;background:#303b54;margin:12px 0 20px"></div>', unsafe_allow_html=True)
+
     if page == "Home":
         render_home(filtered, daily, products, forecast, avg_units, avg_revenue)
 
@@ -572,14 +608,14 @@ def main():
         margin = filtered["gross_profit"].sum() / filtered["revenue"].sum() * 100 if filtered["revenue"].sum() else 0
         d.metric("Gross margin", f"{margin:.1f}%")
         st.markdown("### Revenue and gross profit over time")
-        st.plotly_chart(line_figure(daily, "date", ["revenue", "gross_profit"], {"date": "Date", "value": "Amount"}), use_container_width=True, config={"displayModeBar": False})
+        styled_line_chart(daily, "date", ["revenue", "gross_profit"])
         left, right = st.columns(2)
         with left:
             st.markdown("### Daily units sold")
-            st.plotly_chart(bar_figure(daily, "date", "units_sold", {"date": "Date", "units_sold": "Units sold"}), use_container_width=True, config={"displayModeBar": False})
+            styled_bar_chart(daily, "date", "units_sold", color="#7774ff")
         with right:
             st.markdown("### Cost and profit mix")
-            st.plotly_chart(bar_figure(daily, "date", ["estimated_cost", "gross_profit"], {"date": "Date", "value": "Amount"}), use_container_width=True, config={"displayModeBar": False})
+            styled_line_chart(daily, "date", ["estimated_cost", "gross_profit"])
         st.markdown("### Daily performance table")
         st.dataframe(daily, use_container_width=True, hide_index=True)
 
@@ -589,10 +625,10 @@ def main():
         left, right = st.columns(2)
         with left:
             st.markdown("### Revenue by product")
-            st.plotly_chart(bar_figure(products, "product", "revenue", {"product": "Product", "revenue": "Revenue"}, horizontal=True), use_container_width=True, config={"displayModeBar": False})
+            styled_bar_chart(products, "product", "revenue", horizontal=True, color="#7774ff")
         with right:
             st.markdown("### Gross profit by product")
-            st.plotly_chart(bar_figure(products, "product", "gross_profit", {"product": "Product", "gross_profit": "Gross profit"}, horizontal=True), use_container_width=True, config={"displayModeBar": False})
+            styled_bar_chart(products, "product", "gross_profit", horizontal=True, color="#55b8ff")
         if not products.empty:
             top = products.iloc[0]
             best_profit = products.sort_values("gross_profit", ascending=False).iloc[0]
@@ -631,7 +667,7 @@ def main():
         b.metric("Average daily units", number(avg_units, 1))
         c.metric("Average daily revenue", money(avg_revenue))
         st.markdown("### Next seven days")
-        st.plotly_chart(bar_figure(forecast, "Date", "Forecast units", {"Date": "Date", "Forecast units": "Forecast units"}), use_container_width=True, config={"displayModeBar": False})
+        styled_bar_chart(forecast, "Date", "Forecast units", color="#7774ff")
         st.dataframe(forecast, use_container_width=True, hide_index=True)
         st.markdown("### Historical forecast accuracy")
         if accuracy is None:
@@ -670,7 +706,7 @@ def main():
         business_name = st.text_input("Business / report name", value=st.session_state.get("business_name", "My Business"))
         st.session_state["business_name"] = business_name.strip() or "My Business"
         st.markdown("### Report preview")
-        st.plotly_chart(line_figure(daily, "date", "revenue", {"date": "Date", "revenue": "Revenue"}), use_container_width=True, config={"displayModeBar": False})
+        styled_line_chart(daily, "date", "revenue")
         st.dataframe(products.head(10), use_container_width=True, hide_index=True)
         pdf_bytes = build_pdf_report(filtered, daily, forecast, accuracy, st.session_state["business_name"])
         st.download_button(
