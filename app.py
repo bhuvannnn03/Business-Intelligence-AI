@@ -81,7 +81,44 @@ st.markdown(
     [data-testid="stDateInput"] input, [data-testid="stTextInput"] input, [data-testid="stSelectbox"] [data-baseweb="select"], [data-testid="stMultiSelect"] [data-baseweb="select"] { background: #111d2f; border-color:#2e425d; border-radius:9px; }
     [data-testid="stAlert"] { border-radius: 11px; }
     hr { border-color: #26374f !important; }
-    
+
+/* NURTURA — Larger dashboard typography */
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+    font-size: 19px !important;
+}
+
+[data-testid="stSidebar"] label {
+    font-size: 18px !important;
+}
+
+.block-container {
+    max-width: 1800px !important;
+    padding-top: 2.5rem !important;
+}
+
+h1 {
+    font-size: 46px !important;
+}
+
+h2 {
+    font-size: 34px !important;
+}
+
+h3 {
+    font-size: 27px !important;
+}
+
+[data-testid="stMetricLabel"] {
+    font-size: 19px !important;
+}
+
+[data-testid="stMetricValue"] {
+    font-size: 40px !important;
+}
+
+[data-testid="stPlotlyChart"] {
+    min-height: 520px !important;
+}
 /* NURTURA table system: clean, compact, enterprise-style */
 [data-testid="stDataFrame"], [data-testid="stTable"] {
     border: 1px solid #263a52 !important;
