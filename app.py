@@ -975,7 +975,7 @@ def main():
             margin=dict(l=16, r=18, t=18, b=16),
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(color=TEXT_COLOR),
+            font=dict(color="#c6d2e3"),
             showlegend=False,
         )
         fig.update_xaxes(title=None, showgrid=False, tickformat="%d %b")
