@@ -267,7 +267,57 @@ def display_table(data, height=360, formats=None):
     """Render a clean, readable table with consistent number formatting."""
     table = data.copy()
     formatters = formats or {}
-    styler = table.style.format(formatters, na_rep="—", precision=2)
+    # Style the actual Pandas Styler passed into Streamlit. CSS targeting the
+    # surrounding Streamlit DOM alone does not reliably recolor dataframe cells.
+    styler = (
+        table.style
+        .format(formatters, na_rep="—", precision=2)
+        .set_properties(**{
+            "background-color": "#0d1727",
+            "color": "#e5edf8",
+            "border-color": "#263a52",
+            "font-size": "13px",
+        })
+        .set_table_styles([
+            {
+                "selector": "thead th",
+                "props": [
+                    ("background-color", "#172a42"),
+                    ("color", "#9fc1e8"),
+                    ("font-weight", "700"),
+                    ("border-bottom", "1px solid #35506e"),
+                    ("padding", "12px 14px"),
+                ],
+            },
+            {
+                "selector": "tbody td",
+                "props": [
+                    ("background-color", "#0d1727"),
+                    ("color", "#e5edf8"),
+                    ("border-bottom", "1px solid #22344a"),
+                    ("padding", "10px 14px"),
+                ],
+            },
+            {
+                "selector": "tbody tr:nth-child(even) td",
+                "props": [("background-color", "#111f32")],
+            },
+            {
+                "selector": "tbody tr:hover td",
+                "props": [("background-color", "#173044")],
+            },
+            {
+                "selector": "table",
+                "props": [
+                    ("border-collapse", "separate"),
+                    ("border-spacing", "0"),
+                    ("border", "1px solid #263a52"),
+                    ("border-radius", "10px"),
+                    ("overflow", "hidden"),
+                ],
+            },
+        ], overwrite=False)
+    )
     st.dataframe(styler, use_container_width=True, hide_index=True, height=height)
 
 
