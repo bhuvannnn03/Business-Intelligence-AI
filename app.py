@@ -134,6 +134,29 @@ st.markdown(
     background: #142b3a !important;
 }
 
+/* Sidebar navigation readability upgrade */
+[data-testid="stSidebar"] div[role="radiogroup"] > label {
+    min-height: 48px !important;
+    padding: 12px 13px !important;
+    border-radius: 12px !important;
+}
+[data-testid="stSidebar"] div[role="radiogroup"] > label p,
+[data-testid="stSidebar"] div[role="radiogroup"] > label span {
+    font-size: 15px !important;
+    line-height: 1.45 !important;
+    font-weight: 550 !important;
+}
+[data-testid="stSidebar"] .ic-section-label {
+    font-size: 11px !important;
+    letter-spacing: 1.8px !important;
+}
+[data-testid="stSidebar"] .ic-brand-name {
+    font-size: 16px !important;
+}
+[data-testid="stSidebar"] .ic-brand-sub {
+    font-size: 10px !important;
+    letter-spacing: 1.5px !important;
+}
 </style>
     """,
     unsafe_allow_html=True,
@@ -318,7 +341,25 @@ def display_table(data, height=360, formats=None):
             },
         ], overwrite=False)
     )
-    st.dataframe(styler, use_container_width=True, hide_index=True, height=height)
+    st.dataframe(
+        styler,
+        use_container_width=True,
+        hide_index=True,
+        height=min(height, 360),
+        row_height=34,
+        column_config={
+            "product": st.column_config.TextColumn("Product", width="medium"),
+            "stock_on_hand": st.column_config.NumberColumn("Stock on hand", format="%d"),
+            "units_sold": st.column_config.NumberColumn("Units sold", format="%d"),
+            "selling_price": st.column_config.NumberColumn("Selling price", format="₹%.2f"),
+            "unit_cost": st.column_config.NumberColumn("Unit cost", format="₹%.2f"),
+            "revenue": st.column_config.NumberColumn("Revenue", format="₹%.2f"),
+            "gross_profit": st.column_config.NumberColumn("Gross profit", format="₹%.2f"),
+            "gross_margin": st.column_config.NumberColumn("Gross margin", format="%.1f%%"),
+            "status": st.column_config.TextColumn("Stock status", width="small"),
+            "date": st.column_config.DateColumn("Date", format="DD MMM YYYY"),
+        },
+    )
 
 
 def make_demo_data():
