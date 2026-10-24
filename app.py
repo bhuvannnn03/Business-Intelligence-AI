@@ -136,27 +136,76 @@ st.markdown(
 
 /* Sidebar navigation readability upgrade */
 [data-testid="stSidebar"] div[role="radiogroup"] > label {
-    min-height: 48px !important;
-    padding: 12px 13px !important;
-    border-radius: 12px !important;
+    min-height: 64px !important;
+    padding: 17px 15px !important;
+    border-radius: 13px !important;
 }
 [data-testid="stSidebar"] div[role="radiogroup"] > label p,
 [data-testid="stSidebar"] div[role="radiogroup"] > label span {
-    font-size: 15px !important;
-    line-height: 1.45 !important;
-    font-weight: 550 !important;
+    font-size: 21px !important;
+    line-height: 1.35 !important;
+    font-weight: 600 !important;
 }
 [data-testid="stSidebar"] .ic-section-label {
-    font-size: 11px !important;
-    letter-spacing: 1.8px !important;
+    font-size: 13px !important;
+    letter-spacing: 2px !important;
 }
 [data-testid="stSidebar"] .ic-brand-name {
-    font-size: 16px !important;
+    font-size: 20px !important;
 }
 [data-testid="stSidebar"] .ic-brand-sub {
-    font-size: 10px !important;
-    letter-spacing: 1.5px !important;
+    font-size: 12px !important;
+    letter-spacing: 1.7px !important;
 }
+
+/* FORCE dark table surfaces and headers across Streamlit table renderers */
+[data-testid="stDataFrame"],
+[data-testid="stDataFrame"] > div,
+[data-testid="stDataFrame"] [data-testid="glide-grid],
+[data-testid="stTable"],
+[data-testid="stTable"] > div {
+    background: #0b1524 !important;
+    color: #eaf2ff !important;
+    border: 1px solid #263a52 !important;
+    border-radius: 12px !important;
+}
+[data-testid="stDataFrame"] [role="columnheader"],
+[data-testid="stDataFrame"] [role="columnheader"] *,
+[data-testid="stDataFrame"] [role="gridcell"],
+[data-testid="stDataFrame"] [role="gridcell"] * {
+    color: #eaf2ff !important;
+}
+[data-testid="stDataFrame"] [role="columnheader"] {
+    background: #172a42 !important;
+    border-bottom: 1px solid #35506e !important;
+}
+[data-testid="stDataFrame"] [role="gridcell"] {
+    background: #0d1727 !important;
+    border-bottom: 1px solid #22344a !important;
+}
+[data-testid="stTable"] table,
+[data-testid="stTable"] thead,
+[data-testid="stTable"] tbody,
+[data-testid="stTable"] tr,
+[data-testid="stTable"] th,
+[data-testid="stTable"] td {
+    background-color: #0d1727 !important;
+    color: #eaf2ff !important;
+    border-color: #263a52 !important;
+}
+[data-testid="stTable"] thead th {
+    background-color: #172a42 !important;
+    color: #b9d4f4 !important;
+    font-weight: 750 !important;
+}
+[data-testid="stTable"] tbody tr:nth-child(even) td {
+    background-color: #111f32 !important;
+}
+[data-testid="stDataFrame"] [data-testid="stDataFrameResizable"],
+[data-testid="stDataFrame"] canvas {
+    background-color: #0d1727 !important;
+}
+
 </style>
     """,
     unsafe_allow_html=True,
@@ -345,8 +394,8 @@ def display_table(data, height=360, formats=None):
         styler,
         use_container_width=True,
         hide_index=True,
-        height=min(height, 360),
-        row_height=34,
+        height=max(105, min(90 + len(table) * 42, 620)),
+        row_height=42,
         column_config={
             "product": st.column_config.TextColumn("Product", width="medium"),
             "stock_on_hand": st.column_config.NumberColumn("Stock on hand", format="%d"),
