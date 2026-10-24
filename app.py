@@ -136,27 +136,89 @@ st.markdown(
 
 /* Sidebar navigation readability upgrade */
 [data-testid="stSidebar"] div[role="radiogroup"] > label {
-    min-height: 48px !important;
-    padding: 12px 13px !important;
-    border-radius: 12px !important;
+    min-height: 64px !important;
+    padding: 17px 15px !important;
+    border-radius: 13px !important;
 }
 [data-testid="stSidebar"] div[role="radiogroup"] > label p,
 [data-testid="stSidebar"] div[role="radiogroup"] > label span {
-    font-size: 15px !important;
-    line-height: 1.45 !important;
-    font-weight: 550 !important;
+    font-size: 21px !important;
+    line-height: 1.35 !important;
+    font-weight: 600 !important;
 }
 [data-testid="stSidebar"] .ic-section-label {
-    font-size: 11px !important;
-    letter-spacing: 1.8px !important;
+    font-size: 13px !important;
+    letter-spacing: 2px !important;
 }
 [data-testid="stSidebar"] .ic-brand-name {
-    font-size: 16px !important;
+    font-size: 20px !important;
 }
 [data-testid="stSidebar"] .ic-brand-sub {
-    font-size: 10px !important;
-    letter-spacing: 1.5px !important;
+    font-size: 12px !important;
+    letter-spacing: 1.7px !important;
 }
+
+/* FORCE dark table surfaces and headers across Streamlit table renderers */
+[data-testid="stDataFrame"],
+[data-testid="stDataFrame"] > div,
+[data-testid="stDataFrame"] [data-testid="glide-grid],
+[data-testid="stTable"],
+[data-testid="stTable"] > div {
+    background: #0b1524 !important;
+    color: #eaf2ff !important;
+    border: 1px solid #263a52 !important;
+    border-radius: 12px !important;
+}
+[data-testid="stDataFrame"] [role="columnheader"],
+[data-testid="stDataFrame"] [role="columnheader"] *,
+[data-testid="stDataFrame"] [role="gridcell"],
+[data-testid="stDataFrame"] [role="gridcell"] * {
+    color: #eaf2ff !important;
+}
+[data-testid="stDataFrame"] [role="columnheader"] {
+    background: #172a42 !important;
+    border-bottom: 1px solid #35506e !important;
+}
+[data-testid="stDataFrame"] [role="gridcell"] {
+    background: #0d1727 !important;
+    border-bottom: 1px solid #22344a !important;
+}
+[data-testid="stTable"] table,
+[data-testid="stTable"] thead,
+[data-testid="stTable"] tbody,
+[data-testid="stTable"] tr,
+[data-testid="stTable"] th,
+[data-testid="stTable"] td {
+    background-color: #0d1727 !important;
+    color: #eaf2ff !important;
+    border-color: #263a52 !important;
+}
+[data-testid="stTable"] thead th {
+    background-color: #172a42 !important;
+    color: #b9d4f4 !important;
+    font-weight: 750 !important;
+}
+[data-testid="stTable"] tbody tr:nth-child(even) td {
+    background-color: #111f32 !important;
+}
+[data-testid="stDataFrame"] [data-testid="stDataFrameResizable"],
+[data-testid="stDataFrame"] canvas {
+    background-color: #0d1727 !important;
+}
+
+
+/* Large sidebar navigation icons */
+[data-testid="stSidebar"] div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p {
+    font-size: 21px !important;
+}
+[data-testid="stSidebar"] div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p::first-letter {
+    font-size: 42px !important;
+    line-height: 1 !important;
+}
+[data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {
+    min-width: 42px !important;
+}
+
 </style>
     """,
     unsafe_allow_html=True,
@@ -306,7 +368,7 @@ def display_table(data, height=360, formats=None):
                 "selector": "thead th",
                 "props": [
                     ("background-color", "#172a42"),
-                    ("color", "#9fc1e8"),
+                    ("color", "#eaf2ff"),
                     ("font-weight", "700"),
                     ("border-bottom", "1px solid #35506e"),
                     ("padding", "12px 14px"),
@@ -341,25 +403,9 @@ def display_table(data, height=360, formats=None):
             },
         ], overwrite=False)
     )
-    st.dataframe(
-        styler,
-        use_container_width=True,
-        hide_index=True,
-        height=min(height, 360),
-        row_height=34,
-        column_config={
-            "product": st.column_config.TextColumn("Product", width="medium"),
-            "stock_on_hand": st.column_config.NumberColumn("Stock on hand", format="%d"),
-            "units_sold": st.column_config.NumberColumn("Units sold", format="%d"),
-            "selling_price": st.column_config.NumberColumn("Selling price", format="₹%.2f"),
-            "unit_cost": st.column_config.NumberColumn("Unit cost", format="₹%.2f"),
-            "revenue": st.column_config.NumberColumn("Revenue", format="₹%.2f"),
-            "gross_profit": st.column_config.NumberColumn("Gross profit", format="₹%.2f"),
-            "gross_margin": st.column_config.NumberColumn("Gross margin", format="%.1f%%"),
-            "status": st.column_config.TextColumn("Stock status", width="small"),
-            "date": st.column_config.DateColumn("Date", format="DD MMM YYYY"),
-        },
-    )
+    # Use the styled static table instead of Streamlit's virtualized dataframe grid.
+    # The grid can keep white header/footer strips that CSS cannot consistently override.
+    st.table(styler)
 
 
 def make_demo_data():
@@ -912,7 +958,28 @@ def main():
         b.metric("Average daily units", number(avg_units, 1))
         c.metric("Average daily revenue", money(avg_revenue))
         st.markdown("### Next seven days")
-        fig = bar_figure(forecast, "Date", "Forecast units", color=CHART_COLORS[3], height=350)
+        fig = px.line(
+            forecast,
+            x="Date",
+            y="Forecast units",
+            markers=True,
+            title=None,
+        )
+        fig.update_traces(
+            line=dict(color=CHART_COLORS[3], width=3),
+            marker=dict(size=9, color=CHART_COLORS[3]),
+            hovertemplate="%{x|%d %b %Y}<br>Forecast units: %{y:.1f}<extra></extra>",
+        )
+        fig.update_layout(
+            height=320,
+            margin=dict(l=16, r=18, t=18, b=16),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color=TEXT_COLOR),
+            showlegend=False,
+        )
+        fig.update_xaxes(title=None, showgrid=False, tickformat="%d %b")
+        fig.update_yaxes(title=None, gridcolor=CHART_GRID, rangemode="tozero")
         st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
         display_table(forecast, height=300, formats={"Forecast units": "{:,.1f}", "Forecast revenue": "₹{:,.2f}"})
         st.markdown("### Historical forecast accuracy")
