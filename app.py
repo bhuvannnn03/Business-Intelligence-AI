@@ -81,7 +81,60 @@ st.markdown(
     [data-testid="stDateInput"] input, [data-testid="stTextInput"] input, [data-testid="stSelectbox"] [data-baseweb="select"], [data-testid="stMultiSelect"] [data-baseweb="select"] { background: #111d2f; border-color:#2e425d; border-radius:9px; }
     [data-testid="stAlert"] { border-radius: 11px; }
     hr { border-color: #26374f !important; }
-    </style>
+    
+/* NURTURA table system: clean, compact, enterprise-style */
+[data-testid="stDataFrame"], [data-testid="stTable"] {
+    border: 1px solid #263a52 !important;
+    border-radius: 13px !important;
+    overflow: hidden !important;
+    background: #0d1727 !important;
+    box-shadow: 0 10px 28px rgba(0,0,0,.14) !important;
+}
+[data-testid="stDataFrame"] [role="grid"],
+[data-testid="stDataFrame"] canvas {
+    border-radius: 12px !important;
+}
+[data-testid="stDataFrame"] [role="columnheader"] {
+    background: #14243a !important;
+    color: #9bb6d6 !important;
+    font-weight: 700 !important;
+    border-bottom: 1px solid #2a405a !important;
+}
+[data-testid="stDataFrame"] [role="gridcell"] {
+    color: #e5edf8 !important;
+    border-bottom: 1px solid rgba(91,119,153,.16) !important;
+}
+[data-testid="stDataFrame"] [role="row"]:hover [role="gridcell"] {
+    background: rgba(92,224,184,.055) !important;
+}
+[data-testid="stTable"] table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    background: #0d1727 !important;
+    color: #e5edf8 !important;
+    border: 0 !important;
+}
+[data-testid="stTable"] thead tr th {
+    background: #14243a !important;
+    color: #9bb6d6 !important;
+    font-weight: 700 !important;
+    border-bottom: 1px solid #2a405a !important;
+    padding: 13px 15px !important;
+}
+[data-testid="stTable"] tbody tr td {
+    background: #0d1727 !important;
+    color: #e5edf8 !important;
+    border-bottom: 1px solid rgba(91,119,153,.18) !important;
+    padding: 11px 15px !important;
+}
+[data-testid="stTable"] tbody tr:nth-child(even) td {
+    background: #101d30 !important;
+}
+[data-testid="stTable"] tbody tr:hover td {
+    background: #142b3a !important;
+}
+
+</style>
     """,
     unsafe_allow_html=True,
 )
