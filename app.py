@@ -489,8 +489,7 @@ def prepare_data(uploaded_df):
 
     # Minimize exposure: ignore every field not required for these analytics.
     ignored = [c for c in df.columns if c not in ALLOWED_INPUT_COLUMNS]
-    if ignored:
-        errors.append(f"Ignored {len(ignored)} unneeded column(s) to reduce data exposure.")
+    
     df = df[[c for c in df.columns if c in ALLOWED_INPUT_COLUMNS]].copy()
 
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
