@@ -82,201 +82,48 @@ st.markdown(
     [data-testid="stAlert"] { border-radius: 11px; }
     hr { border-color: #26374f !important; }
 
-/* NURTURA — Larger dashboard typography */
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-    font-size: 19px !important;
-}
+/* Dashboard spacing and typography */
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { font-size: 19px !important; }
+[data-testid="stSidebar"] label { font-size: 18px !important; }
+[data-testid="stSidebar"] div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p { font-size: 21px !important; }
+[data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child { min-width: 42px !important; }
 
-[data-testid="stSidebar"] label {
-    font-size: 18px !important;
+/* Remove the blank Streamlit top band and lift the page content */
+[data-testid="stHeader"] {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
 }
-
+[data-testid="stAppViewContainer"] > .main,
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"],
+.block-container {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
 .block-container {
     max-width: 1800px !important;
-    padding-top: 2.5rem !important;
+    padding-bottom: 2rem !important;
 }
+[data-testid="stVerticalBlock"] { gap: .65rem !important; }
 
-h1 {
-    font-size: 46px !important;
-}
-
-h2 {
-    font-size: 34px !important;
-}
-
-h3 {
-    font-size: 27px !important;
-}
-
-[data-testid="stMetricLabel"] {
-    font-size: 19px !important;
-}
-
-[data-testid="stMetricValue"] {
-    font-size: 40px !important;
-}
-
-[data-testid="stPlotlyChart"] {
-    min-height: 520px !important;
-}
-/* NURTURA table system: clean, compact, enterprise-style */
-[data-testid="stDataFrame"], [data-testid="stTable"] {
-    border: 1px solid #263a52 !important;
-    border-radius: 13px !important;
-    overflow: hidden !important;
-    background: #0d1727 !important;
-    box-shadow: 0 10px 28px rgba(0,0,0,.14) !important;
-}
-[data-testid="stDataFrame"] [role="grid"],
-[data-testid="stDataFrame"] canvas {
-    border-radius: 12px !important;
-}
-[data-testid="stDataFrame"] [role="columnheader"] {
-    background: #14243a !important;
-    color: #9bb6d6 !important;
-    font-weight: 700 !important;
-    border-bottom: 1px solid #2a405a !important;
-}
-[data-testid="stDataFrame"] [role="gridcell"] {
-    color: #e5edf8 !important;
-    border-bottom: 1px solid rgba(91,119,153,.16) !important;
-}
-[data-testid="stDataFrame"] [role="row"]:hover [role="gridcell"] {
-    background: rgba(92,224,184,.055) !important;
-}
-[data-testid="stTable"] table {
-    border-collapse: separate !important;
-    border-spacing: 0 !important;
-    background: #0d1727 !important;
-    color: #e5edf8 !important;
-    border: 0 !important;
-}
-[data-testid="stTable"] thead tr th {
-    background: #14243a !important;
-    color: #9bb6d6 !important;
-    font-weight: 700 !important;
-    border-bottom: 1px solid #2a405a !important;
-    padding: 13px 15px !important;
-}
-[data-testid="stTable"] tbody tr td {
-    background: #0d1727 !important;
-    color: #e5edf8 !important;
-    border-bottom: 1px solid rgba(91,119,153,.18) !important;
-    padding: 11px 15px !important;
-}
-[data-testid="stTable"] tbody tr:nth-child(even) td {
-    background: #101d30 !important;
-}
-[data-testid="stTable"] tbody tr:hover td {
-    background: #142b3a !important;
-}
-
-/* Sidebar navigation readability upgrade */
-[data-testid="stSidebar"] div[role="radiogroup"] > label {
-    min-height: 64px !important;
-    padding: 17px 15px !important;
-    border-radius: 13px !important;
-}
-[data-testid="stSidebar"] div[role="radiogroup"] > label p,
-[data-testid="stSidebar"] div[role="radiogroup"] > label span {
-    font-size: 21px !important;
-    line-height: 1.35 !important;
-    font-weight: 600 !important;
-}
-[data-testid="stSidebar"] .ic-section-label {
-    font-size: 13px !important;
-    letter-spacing: 2px !important;
-}
-[data-testid="stSidebar"] .ic-brand-name {
-    font-size: 20px !important;
-}
-[data-testid="stSidebar"] .ic-brand-sub {
-    font-size: 12px !important;
-    letter-spacing: 1.7px !important;
-}
-
-/* FORCE dark table surfaces and headers across Streamlit table renderers */
-[data-testid="stDataFrame"],
-[data-testid="stDataFrame"] > div,
-[data-testid="stDataFrame"] [data-testid="glide-grid],
-[data-testid="stTable"],
-[data-testid="stTable"] > div {
-    background: #0b1524 !important;
-    color: #eaf2ff !important;
-    border: 1px solid #263a52 !important;
-    border-radius: 12px !important;
-}
-[data-testid="stDataFrame"] [role="columnheader"],
-[data-testid="stDataFrame"] [role="columnheader"] *,
-[data-testid="stDataFrame"] [role="gridcell"],
-[data-testid="stDataFrame"] [role="gridcell"] * {
-    color: #eaf2ff !important;
-}
-[data-testid="stDataFrame"] [role="columnheader"] {
-    background: #172a42 !important;
-    border-bottom: 1px solid #35506e !important;
-}
-[data-testid="stDataFrame"] [role="gridcell"] {
-    background: #0d1727 !important;
-    border-bottom: 1px solid #22344a !important;
-}
+/* Dark tables consistent with the dashboard */
 [data-testid="stTable"] table,
-[data-testid="stTable"] thead,
-[data-testid="stTable"] tbody,
-[data-testid="stTable"] tr,
 [data-testid="stTable"] th,
 [data-testid="stTable"] td {
     background-color: #0d1727 !important;
-    color: #eaf2ff !important;
-    border-color: #263a52 !important;
-}
-[data-testid="stTable"] thead th {
-    background-color: #172a42 !important;
-    color: #b9d4f4 !important;
-    font-weight: 750 !important;
-}
-[data-testid="stTable"] tbody tr:nth-child(even) td {
-    background-color: #111f32 !important;
-}
-[data-testid="stDataFrame"] [data-testid="stDataFrameResizable"],
-[data-testid="stDataFrame"] canvas {
-    background-color: #0d1727 !important;
-}
-
-
-/* Large sidebar navigation icons */
-[data-testid="stSidebar"] div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p {
-    font-size: 21px !important;
-}
-[data-testid="stSidebar"] div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p::first-letter {
-    font-size: 42px !important;
-    line-height: 1 !important;
-}
-[data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {
-    min-width: 42px !important;
-}
-
-/* Compact top chrome: bring the workspace up and remove the empty band */
-[data-testid="stHeader"] {
-    height: 2rem !important;
-    min-height: 2rem !important;
-    background: rgba(8,13,22,.96) !important;
-}
-[data-testid="stAppViewBlockContainer"],
-.block-container {
-    padding-top: .35rem !important;
-    margin-top: 0 !important;
-}
-[data-testid="stMainBlockContainer"] {
-    padding-top: .35rem !important;
-}
-[data-testid="stVerticalBlock"] {
-    gap: .65rem !important;
-}
-[data-testid="stDataFrame"], [data-testid="stTable"] {
-    background: #0d1727 !important;
     color: #e5edf8 !important;
+    border-color: #263951 !important;
 }
+[data-testid="stTable"] tbody tr:nth-child(even) td { background-color: #111f32 !important; }
+[data-testid="stDataFrame"] { background: #0d1727 !important; color: #e5edf8 !important; }
+[data-testid="stDataFrame"] [data-testid="stDataFrameResizable"],
+[data-testid="stDataFrame"] canvas { background-color: #0d1727 !important; }
+
+h1 { font-size: 46px !important; }
+h2 { font-size: 34px !important; }
+h3 { font-size: 27px !important; }
 </style>
     """,
     unsafe_allow_html=True,
@@ -772,58 +619,132 @@ def section_heading(eyebrow, title, subtitle=None):
 
 
 def render_home(df, daily, products, forecast, avg_units, avg_revenue):
-    section_heading("WORKSPACE / OVERVIEW", "Business at a glance", "A clear view of sales performance, profitability, and areas to investigate.")
+    """NURTURA executive overview inspired by the supplied dashboard references."""
+    section_heading(
+        "EXECUTIVE WORKSPACE / OVERVIEW",
+        "Executive overview",
+        "A single view of sales performance, product contribution, profitability, and business signals."
+    )
+
     revenue = float(df["revenue"].sum())
+    cost = float(df["estimated_cost"].sum())
     profit = float(df["gross_profit"].sum())
-    margin = profit / revenue * 100 if revenue else 0
+    margin = profit / revenue * 100 if revenue else 0.0
     units = float(df["units_sold"].sum())
-    cols = st.columns(4)
-    cols[0].metric("Total revenue", money(revenue))
-    cols[1].metric("Gross profit", money(profit))
-    cols[2].metric("Gross margin", f"{margin:.1f}%")
-    cols[3].metric("Units sold", number(units))
+    product_count = int(df["product"].nunique())
+    recorded_days = int(df["date"].nunique())
 
-    left, right = st.columns([1.65, 1])
-    with left:
+    # Executive KPI strip: use only measures supported by the uploaded data.
+    kpis = st.columns(4)
+    kpis[0].metric("Recorded revenue", money(revenue))
+    kpis[1].metric("Estimated gross profit", money(profit))
+    kpis[2].metric("Gross margin", f"{margin:.1f}%")
+    kpis[3].metric("Units sold", number(units))
+
+    st.markdown("### Executive summary")
+    st.markdown(
+        '<div class="ic-panel">'
+        '<div class="ic-muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:750;margin-bottom:8px">Performance snapshot</div>'
+        f'<div style="font-size:1rem;line-height:1.75;color:#dce6f5">Across <b style="color:#ffffff">{recorded_days:,} recorded days</b> and '
+        f'<b style="color:#ffffff">{product_count:,} products</b>, the selected dataset records <b style="color:#ffffff">{money(revenue)}</b> in revenue and '
+        f'<b style="color:#ffffff">{money(profit)}</b> in estimated gross profit after <b style="color:#ffffff">{money(cost)}</b> in estimated product costs. '
+        f'The calculated gross margin is <b style="color:#7ce7c5">{margin:.1f}%</b>. These figures reflect the selected records and exclude operating expenses unless included separately in Profit Tracker.</div>'
+        '</div>', unsafe_allow_html=True
+    )
+
+    # Dashboard grid modeled on the reference: trend, product ranking, category mix, and profit.
+    top_left, top_right = st.columns([1.55, 1])
+    with top_left:
         st.markdown("### Revenue performance")
-        st.caption("Daily recorded revenue across the selected period")
-        fig = line_figure(daily, "date", "revenue", height=360)
-        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
-    with right:
+        st.caption("Daily recorded revenue across the selected date range")
+        trend = line_figure(daily, "date", "revenue", height=330)
+        trend.update_traces(line=dict(color=CHART_COLORS[0], width=3), marker=dict(size=4))
+        st.plotly_chart(trend, use_container_width=True, config={"displaylogo": False})
+    with top_right:
         st.markdown("### Revenue by product")
-        st.caption("Top products ranked by revenue")
-        fig = bar_figure(products.head(7).sort_values("revenue"), "revenue", "product", horizontal=True, color=CHART_COLORS[0], height=360)
-        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
-        st.caption("Ranked by recorded revenue.")
+        st.caption("Highest-revenue products in the selected dataset")
+        top_products = products.head(7).sort_values("revenue", ascending=True)
+        fig = px.bar(
+            top_products, x="revenue", y="product", orientation="h", text="revenue",
+            color="revenue", color_continuous_scale=[[0, "#4269b2"], [1, "#7da2ff"]]
+        )
+        fig.update_traces(texttemplate="₹%{x:,.0f}", textposition="outside", cliponaxis=False,
+                          hovertemplate="%{y}<br>Revenue: ₹%{x:,.2f}<extra></extra>")
+        fig.update_layout(coloraxis_showscale=False, margin=dict(l=8, r=35, t=15, b=15))
+        fig.update_xaxes(title=None, showgrid=True, gridcolor=CHART_GRID, tickformat="~s")
+        fig.update_yaxes(title=None, showgrid=False, categoryorder="total ascending")
+        st.plotly_chart(polish_chart(fig, height=330, show_legend=False), use_container_width=True,
+                        config={"displaylogo": False})
 
-    st.markdown("### Business signals")
-    signals = []
-    if len(daily) >= 14:
-        current = float(daily.tail(7)["revenue"].mean())
-        previous = float(daily.iloc[-14:-7]["revenue"].mean())
-        if previous > 0:
-            change = (current - previous) / previous * 100
-            if change >= 3:
-                signals.append(("Positive", f"Recent average daily revenue is up {change:.1f}% compared with the prior seven recorded days."))
-            elif change <= -3:
-                signals.append(("Review", f"Recent average daily revenue is down {abs(change):.1f}% compared with the prior seven recorded days. Review product mix, prices, and demand."))
-            else:
-                signals.append(("Stable", f"Recent average daily revenue is broadly stable ({change:+.1f}%) versus the prior seven recorded days."))
-    if not products.empty:
-        top = products.iloc[0]
-        signals.append(("Top revenue", f"{top['product']} has the highest recorded revenue at {money(top['revenue'])}. Revenue leadership does not necessarily mean the highest margin."))
-        low_profit = products.sort_values("gross_profit").iloc[0]
-        signals.append(("Profit review", f"{low_profit['product']} has the lowest gross profit in the product summary ({money(low_profit['gross_profit'])}); review its volume, pricing, and cost assumptions."))
-    if "stock_on_hand" in df.columns:
-        stock = df.dropna(subset=["stock_on_hand"]).groupby("product")["stock_on_hand"].min()
-        low_stock = stock[stock <= 10]
-        if len(low_stock):
-            signals.append(("Inventory", f"{len(low_stock)} product(s) have a minimum recorded stock of 10 or fewer units. Confirm current stock before replenishing."))
-    if not signals:
-        signals.append(("Data note", "Upload at least 14 daily records for period comparisons and more reliable baseline evaluation."))
-    for label, message in signals:
-        st.markdown(f'<div class="ic-alert"><b>{label}</b><br>{message}</div>', unsafe_allow_html=True)
-    st.caption("Insights are rule-based summaries of the uploaded data, not guarantees or causal explanations.")
+    bottom_left, bottom_mid, bottom_right = st.columns([1, 1, 1])
+    with bottom_left:
+        st.markdown("### Cost vs. gross profit")
+        st.caption("Estimated product costs compared with gross profit")
+        mix = pd.DataFrame({"Metric": ["Estimated cost", "Gross profit"], "Amount": [cost, profit]})
+        fig = px.pie(mix, names="Metric", values="Amount", hole=.58,
+                     color="Metric", color_discrete_map={"Estimated cost": CHART_COLORS[2], "Gross profit": CHART_COLORS[1]})
+        fig.update_traces(textposition="inside", textinfo="label+percent",
+                          hovertemplate="%{label}<br>₹%{value:,.2f}<extra></extra>",
+                          marker=dict(line=dict(color="#0a101b", width=3)))
+        fig.update_layout(margin=dict(l=8, r=8, t=10, b=8), showlegend=False)
+        st.plotly_chart(polish_chart(fig, height=290, show_legend=False), use_container_width=True,
+                        config={"displaylogo": False})
+    with bottom_mid:
+        st.markdown("### Gross profit by product")
+        st.caption("Products ranked by estimated gross profit")
+        profit_products = products.sort_values("gross_profit", ascending=True).tail(6)
+        fig = px.bar(profit_products, x="gross_profit", y="product", orientation="h", text="gross_profit")
+        fig.update_traces(marker_color=CHART_COLORS[1], texttemplate="₹%{x:,.0f}", textposition="outside",
+                          cliponaxis=False, hovertemplate="%{y}<br>Gross profit: ₹%{x:,.2f}<extra></extra>")
+        fig.update_layout(margin=dict(l=8, r=35, t=10, b=12))
+        fig.update_xaxes(title=None, tickformat="~s", gridcolor=CHART_GRID)
+        fig.update_yaxes(title=None, showgrid=False)
+        st.plotly_chart(polish_chart(fig, height=290, show_legend=False), use_container_width=True,
+                        config={"displaylogo": False})
+    with bottom_right:
+        st.markdown("### NURTURA Pulse")
+        st.caption("Rule-based signals from the selected records")
+        signals = []
+        if len(daily) >= 14:
+            current = float(daily.tail(7)["revenue"].mean())
+            previous = float(daily.iloc[-14:-7]["revenue"].mean())
+            if previous > 0:
+                change = (current - previous) / previous * 100
+                if change >= 3:
+                    signals.append(("Revenue momentum", f"Recent average daily revenue is up {change:.1f}% versus the previous seven recorded days."))
+                elif change <= -3:
+                    signals.append(("Revenue to review", f"Recent average daily revenue is down {abs(change):.1f}%. Review demand, pricing, and product mix."))
+                else:
+                    signals.append(("Revenue trend", f"Recent average daily revenue is broadly stable ({change:+.1f}%)."))
+        if not products.empty:
+            leader = products.sort_values("revenue", ascending=False).iloc[0]
+            profit_leader = products.sort_values("gross_profit", ascending=False).iloc[0]
+            signals.append(("Revenue leader", f"{leader['product']} leads recorded revenue at {money(leader['revenue'])}."))
+            signals.append(("Profit leader", f"{profit_leader['product']} leads estimated gross profit at {money(profit_leader['gross_profit'])}."))
+        if "stock_on_hand" in df.columns:
+            stock = df.dropna(subset=["stock_on_hand"]).groupby("product")["stock_on_hand"].min()
+            low_stock = stock[stock <= 10]
+            if len(low_stock):
+                signals.append(("Inventory check", f"{len(low_stock)} product(s) have a recorded minimum stock of 10 units or less."))
+        if not signals:
+            signals.append(("Data note", "More daily records are needed to compare recent revenue momentum."))
+        for label, message in signals[:4]:
+            st.markdown(f'<div class="ic-alert"><b>{label}</b><br>{message}</div>', unsafe_allow_html=True)
+        st.caption("Signals are descriptive, not causal predictions. Check the source data before acting.")
+
+    st.markdown("### Recent daily performance")
+    recent = daily.tail(10).sort_values("date", ascending=False).copy()
+    recent["date"] = recent["date"].dt.strftime("%d %b %Y")
+    display_table(recent.rename(columns={
+        "date": "Date", "units_sold": "Units sold", "revenue": "Revenue",
+        "estimated_cost": "Estimated cost", "gross_profit": "Gross profit",
+        "gross_margin_pct": "Gross margin (%)"
+    }), height=330, formats={
+        "Units sold": "{:,.0f}", "Revenue": "₹{:,.2f}",
+        "Estimated cost": "₹{:,.2f}", "Gross profit": "₹{:,.2f}",
+        "Gross margin (%)": "{:.1f}%"
+    })
+    st.caption("All measures use the selected date and product filters. Revenue is units × selling price; gross profit excludes operating expenses and taxes.")
 
 
 def main():
