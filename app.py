@@ -619,170 +619,58 @@ def section_heading(eyebrow, title, subtitle=None):
 
 
 def render_home(df, daily, products, forecast, avg_units, avg_revenue):
-    """NURTURA executive summary combining pulse insights and dashboard overview."""
-    section_heading(
-        "EXECUTIVE WORKSPACE / SUMMARY",
-        "Executive summary",
-        "One consolidated view of sales performance, product contribution, profitability, and business signals."
-    )
-
+    section_heading("WORKSPACE / OVERVIEW", "Business at a glance", "A clear view of sales performance, profitability, and areas to investigate.")
     revenue = float(df["revenue"].sum())
-    cost = float(df["estimated_cost"].sum())
     profit = float(df["gross_profit"].sum())
-    margin = profit / revenue * 100 if revenue else 0.0
+    margin = profit / revenue * 100 if revenue else 0
     units = float(df["units_sold"].sum())
-    product_count = int(df["product"].nunique())
-    day_count = int(daily["date"].nunique())
-    avg_daily_revenue = float(daily["revenue"].mean()) if not daily.empty else 0.0
+    cols = st.columns(4)
+    cols[0].metric("Total revenue", money(revenue))
+    cols[1].metric("Gross profit", money(profit))
+    cols[2].metric("Gross margin", f"{margin:.1f}%")
+    cols[3].metric("Units sold", number(units))
 
-    # Feature 1: Executive KPI strip inspired by sales-cloud summary dashboards.
-    st.markdown("### Performance snapshot")
-    k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Total revenue", money(revenue))
-    k2.metric("Gross profit", money(profit))
-    k3.metric("Gross margin", f"{margin:.1f}%")
-    k4.metric("Units sold", number(units))
-    k5, k6, k7, k8 = st.columns(4)
-    k5.metric("Estimated cost", money(cost))
-    k6.metric("Products tracked", number(product_count))
-    k7.metric("Days recorded", number(day_count))
-    k8.metric("Average daily revenue", money(avg_daily_revenue))
-
-    st.markdown("---")
-
-    # Feature 2: Multi-panel overview with trend and product rankings.
-    left, right = st.columns([1.55, 1], gap="large")
+    left, right = st.columns([1.65, 1])
     with left:
         st.markdown("### Revenue performance")
-        st.caption("Recorded daily revenue across the selected date range")
-        fig = line_figure(daily, "date", "revenue", height=340)
+        st.caption("Daily recorded revenue across the selected period")
+        fig = line_figure(daily, "date", "revenue", height=360)
         st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
     with right:
-        st.markdown("### Top products by revenue")
-        st.caption("Highest recorded revenue contributors")
-        top_products = products.head(7).sort_values("revenue")
-        if not top_products.empty:
-            fig = bar_figure(
-                top_products, "revenue", "product", horizontal=True,
-                color=CHART_COLORS[0], height=340
-            )
-            st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
-        else:
-            st.info("Product-level data is not available yet.")
+        st.markdown("### Revenue by product")
+        st.caption("Top products ranked by revenue")
+        fig = bar_figure(products.head(7).sort_values("revenue"), "revenue", "product", horizontal=True, color=CHART_COLORS[0], height=360)
+        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+        st.caption("Ranked by recorded revenue.")
 
-    # Secondary chart row for product revenue mix and profitability.
-    st.markdown("### Product performance")
-    pleft, pright = st.columns(2, gap="large")
-    with pleft:
-        st.markdown("#### Revenue mix")
-        if not products.empty and float(products["revenue"].sum()) > 0:
-            mix = products.nlargest(6, "revenue")[["product", "revenue"]].copy()
-            other_revenue = float(products["revenue"].sum() - mix["revenue"].sum())
-            if other_revenue > 0:
-                mix = pd.concat(
-                    [mix, pd.DataFrame([{"product": "Other products", "revenue": other_revenue}])],
-                    ignore_index=True
-                )
-            pie = px.pie(
-                mix, names="product", values="revenue", hole=0.52,
-                color_discrete_sequence=CHART_COLORS
-            )
-            pie.update_traces(
-                textposition="inside", textinfo="percent",
-                marker=dict(line=dict(color="#0d1727", width=3)),
-                hovertemplate="<b>%{label}</b><br>Revenue: ₹%{value:,.2f}<br>Share: %{percent}<extra></extra>"
-            )
-            pie.update_layout(
-                margin=dict(l=12, r=12, t=18, b=12),
-                legend=dict(orientation="h", yanchor="bottom", y=-0.12, x=0)
-            )
-            st.plotly_chart(polish_chart(pie, height=330), use_container_width=True)
-        else:
-            st.info("Revenue mix will appear when product revenue is available.")
-    with pright:
-        st.markdown("#### Gross profit by product")
-        if not products.empty:
-            profit_products = products.sort_values("gross_profit").tail(7)
-            fig = bar_figure(
-                profit_products, "gross_profit", "product", horizontal=True,
-                color=CHART_COLORS[1], height=330
-            )
-            st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
-        else:
-            st.info("Product profitability will appear when product data is available.")
-
-    # Feature 3: NURTURA Pulse — concise rule-based business signals.
-    st.markdown("---")
-    st.markdown("### NURTURA Pulse")
-    st.caption("Automated observations calculated from the currently filtered dataset.")
+    st.markdown("### Business signals")
     signals = []
-
     if len(daily) >= 14:
         current = float(daily.tail(7)["revenue"].mean())
         previous = float(daily.iloc[-14:-7]["revenue"].mean())
         if previous > 0:
             change = (current - previous) / previous * 100
             if change >= 3:
-                signals.append(("Revenue momentum", "Positive", f"Average daily revenue is up {change:.1f}% versus the previous seven recorded days."))
+                signals.append(("Positive", f"Recent average daily revenue is up {change:.1f}% compared with the prior seven recorded days."))
             elif change <= -3:
-                signals.append(("Revenue momentum", "Review", f"Average daily revenue is down {abs(change):.1f}% versus the previous seven recorded days. Review demand, pricing, and product mix."))
+                signals.append(("Review", f"Recent average daily revenue is down {abs(change):.1f}% compared with the prior seven recorded days. Review product mix, prices, and demand."))
             else:
-                signals.append(("Revenue momentum", "Stable", f"Average daily revenue is broadly stable ({change:+.1f}%) versus the previous seven recorded days."))
-
+                signals.append(("Stable", f"Recent average daily revenue is broadly stable ({change:+.1f}%) versus the prior seven recorded days."))
     if not products.empty:
-        top = products.sort_values("revenue", ascending=False).iloc[0]
-        best_profit = products.sort_values("gross_profit", ascending=False).iloc[0]
-        lowest_profit = products.sort_values("gross_profit", ascending=True).iloc[0]
-        signals.append(("Revenue leader", "Product", f"{top['product']} leads recorded revenue at {money(top['revenue'])}. A revenue leader is not necessarily the highest-margin product."))
-        signals.append(("Profit leader", "Product", f"{best_profit['product']} has the highest estimated gross profit at {money(best_profit['gross_profit'])}."))
-        if len(products) > 1:
-            signals.append(("Profit review", "Review", f"{lowest_profit['product']} has the lowest estimated gross profit ({money(lowest_profit['gross_profit'])}); inspect its price, cost, and sales volume."))
-
+        top = products.iloc[0]
+        signals.append(("Top revenue", f"{top['product']} has the highest recorded revenue at {money(top['revenue'])}. Revenue leadership does not necessarily mean the highest margin."))
+        low_profit = products.sort_values("gross_profit").iloc[0]
+        signals.append(("Profit review", f"{low_profit['product']} has the lowest gross profit in the product summary ({money(low_profit['gross_profit'])}); review its volume, pricing, and cost assumptions."))
     if "stock_on_hand" in df.columns:
         stock = df.dropna(subset=["stock_on_hand"]).groupby("product")["stock_on_hand"].min()
         low_stock = stock[stock <= 10]
         if len(low_stock):
-            signals.append(("Inventory watch", "Review", f"{len(low_stock)} product(s) have a minimum recorded stock of 10 or fewer units. Verify current stock before replenishing."))
-
+            signals.append(("Inventory", f"{len(low_stock)} product(s) have a minimum recorded stock of 10 or fewer units. Confirm current stock before replenishing."))
     if not signals:
-        signals.append(("Data coverage", "Info", "Upload more valid daily records to enable period comparisons and stronger trend signals."))
-
-    pulse_cols = st.columns(2, gap="medium")
-    for idx, (label, status, message) in enumerate(signals):
-        with pulse_cols[idx % 2]:
-            st.markdown(
-                f'<div class="ic-alert"><b>{label} · {status}</b><br>{message}</div>',
-                unsafe_allow_html=True
-            )
-
-    # Compact recent-performance table, like a management overview.
-    st.markdown("---")
-    st.markdown("### Recent daily performance")
-    recent_daily = daily.tail(10).sort_values("date", ascending=False).copy()
-    recent_daily = recent_daily.rename(columns={
-        "date": "Date",
-        "units_sold": "Units sold",
-        "revenue": "Revenue",
-        "estimated_cost": "Estimated cost",
-        "gross_profit": "Gross profit",
-        "gross_margin_pct": "Gross margin %",
-    })
-    display_table(
-        recent_daily,
-        height=360,
-        formats={
-            "Units sold": "{:,.0f}",
-            "Revenue": "₹{:,.2f}",
-            "Estimated cost": "₹{:,.2f}",
-            "Gross profit": "₹{:,.2f}",
-            "Gross margin %": "{:.1f}%",
-        }
-    )
-    st.caption(
-        "NURTURA Pulse uses transparent rules on the current dataset. "
-        "Financial figures are derived from supplied prices and costs; "
-        "they are not audited results or causal predictions."
-    )
+        signals.append(("Data note", "Upload at least 14 daily records for period comparisons and more reliable baseline evaluation."))
+    for label, message in signals:
+        st.markdown(f'<div class="ic-alert"><b>{label}</b><br>{message}</div>', unsafe_allow_html=True)
+    st.caption("Insights are rule-based summaries of the uploaded data, not guarantees or causal explanations.")
 
 
 def main():
