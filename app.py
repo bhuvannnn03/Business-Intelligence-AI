@@ -82,48 +82,201 @@ st.markdown(
     [data-testid="stAlert"] { border-radius: 11px; }
     hr { border-color: #26374f !important; }
 
-/* Dashboard spacing and typography */
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { font-size: 19px !important; }
-[data-testid="stSidebar"] label { font-size: 18px !important; }
-[data-testid="stSidebar"] div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p { font-size: 21px !important; }
-[data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child { min-width: 42px !important; }
+/* NURTURA — Larger dashboard typography */
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+    font-size: 19px !important;
+}
 
-/* Remove the blank Streamlit top band and lift the page content */
-[data-testid="stHeader"] {
-    display: none !important;
-    height: 0 !important;
-    min-height: 0 !important;
+[data-testid="stSidebar"] label {
+    font-size: 18px !important;
 }
-[data-testid="stAppViewContainer"] > .main,
-[data-testid="stMain"],
-[data-testid="stMainBlockContainer"],
-[data-testid="stAppViewBlockContainer"],
-.block-container {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
+
 .block-container {
     max-width: 1800px !important;
-    padding-bottom: 2rem !important;
+    padding-top: 2.5rem !important;
 }
-[data-testid="stVerticalBlock"] { gap: .65rem !important; }
 
-/* Dark tables consistent with the dashboard */
+h1 {
+    font-size: 46px !important;
+}
+
+h2 {
+    font-size: 34px !important;
+}
+
+h3 {
+    font-size: 27px !important;
+}
+
+[data-testid="stMetricLabel"] {
+    font-size: 19px !important;
+}
+
+[data-testid="stMetricValue"] {
+    font-size: 40px !important;
+}
+
+[data-testid="stPlotlyChart"] {
+    min-height: 520px !important;
+}
+/* NURTURA table system: clean, compact, enterprise-style */
+[data-testid="stDataFrame"], [data-testid="stTable"] {
+    border: 1px solid #263a52 !important;
+    border-radius: 13px !important;
+    overflow: hidden !important;
+    background: #0d1727 !important;
+    box-shadow: 0 10px 28px rgba(0,0,0,.14) !important;
+}
+[data-testid="stDataFrame"] [role="grid"],
+[data-testid="stDataFrame"] canvas {
+    border-radius: 12px !important;
+}
+[data-testid="stDataFrame"] [role="columnheader"] {
+    background: #14243a !important;
+    color: #9bb6d6 !important;
+    font-weight: 700 !important;
+    border-bottom: 1px solid #2a405a !important;
+}
+[data-testid="stDataFrame"] [role="gridcell"] {
+    color: #e5edf8 !important;
+    border-bottom: 1px solid rgba(91,119,153,.16) !important;
+}
+[data-testid="stDataFrame"] [role="row"]:hover [role="gridcell"] {
+    background: rgba(92,224,184,.055) !important;
+}
+[data-testid="stTable"] table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    background: #0d1727 !important;
+    color: #e5edf8 !important;
+    border: 0 !important;
+}
+[data-testid="stTable"] thead tr th {
+    background: #14243a !important;
+    color: #9bb6d6 !important;
+    font-weight: 700 !important;
+    border-bottom: 1px solid #2a405a !important;
+    padding: 13px 15px !important;
+}
+[data-testid="stTable"] tbody tr td {
+    background: #0d1727 !important;
+    color: #e5edf8 !important;
+    border-bottom: 1px solid rgba(91,119,153,.18) !important;
+    padding: 11px 15px !important;
+}
+[data-testid="stTable"] tbody tr:nth-child(even) td {
+    background: #101d30 !important;
+}
+[data-testid="stTable"] tbody tr:hover td {
+    background: #142b3a !important;
+}
+
+/* Sidebar navigation readability upgrade */
+[data-testid="stSidebar"] div[role="radiogroup"] > label {
+    min-height: 64px !important;
+    padding: 17px 15px !important;
+    border-radius: 13px !important;
+}
+[data-testid="stSidebar"] div[role="radiogroup"] > label p,
+[data-testid="stSidebar"] div[role="radiogroup"] > label span {
+    font-size: 21px !important;
+    line-height: 1.35 !important;
+    font-weight: 600 !important;
+}
+[data-testid="stSidebar"] .ic-section-label {
+    font-size: 13px !important;
+    letter-spacing: 2px !important;
+}
+[data-testid="stSidebar"] .ic-brand-name {
+    font-size: 20px !important;
+}
+[data-testid="stSidebar"] .ic-brand-sub {
+    font-size: 12px !important;
+    letter-spacing: 1.7px !important;
+}
+
+/* FORCE dark table surfaces and headers across Streamlit table renderers */
+[data-testid="stDataFrame"],
+[data-testid="stDataFrame"] > div,
+[data-testid="stDataFrame"] [data-testid="glide-grid],
+[data-testid="stTable"],
+[data-testid="stTable"] > div {
+    background: #0b1524 !important;
+    color: #eaf2ff !important;
+    border: 1px solid #263a52 !important;
+    border-radius: 12px !important;
+}
+[data-testid="stDataFrame"] [role="columnheader"],
+[data-testid="stDataFrame"] [role="columnheader"] *,
+[data-testid="stDataFrame"] [role="gridcell"],
+[data-testid="stDataFrame"] [role="gridcell"] * {
+    color: #eaf2ff !important;
+}
+[data-testid="stDataFrame"] [role="columnheader"] {
+    background: #172a42 !important;
+    border-bottom: 1px solid #35506e !important;
+}
+[data-testid="stDataFrame"] [role="gridcell"] {
+    background: #0d1727 !important;
+    border-bottom: 1px solid #22344a !important;
+}
 [data-testid="stTable"] table,
+[data-testid="stTable"] thead,
+[data-testid="stTable"] tbody,
+[data-testid="stTable"] tr,
 [data-testid="stTable"] th,
 [data-testid="stTable"] td {
     background-color: #0d1727 !important;
-    color: #e5edf8 !important;
-    border-color: #263951 !important;
+    color: #eaf2ff !important;
+    border-color: #263a52 !important;
 }
-[data-testid="stTable"] tbody tr:nth-child(even) td { background-color: #111f32 !important; }
-[data-testid="stDataFrame"] { background: #0d1727 !important; color: #e5edf8 !important; }
+[data-testid="stTable"] thead th {
+    background-color: #172a42 !important;
+    color: #b9d4f4 !important;
+    font-weight: 750 !important;
+}
+[data-testid="stTable"] tbody tr:nth-child(even) td {
+    background-color: #111f32 !important;
+}
 [data-testid="stDataFrame"] [data-testid="stDataFrameResizable"],
-[data-testid="stDataFrame"] canvas { background-color: #0d1727 !important; }
+[data-testid="stDataFrame"] canvas {
+    background-color: #0d1727 !important;
+}
 
-h1 { font-size: 46px !important; }
-h2 { font-size: 34px !important; }
-h3 { font-size: 27px !important; }
+
+/* Large sidebar navigation icons */
+[data-testid="stSidebar"] div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p {
+    font-size: 21px !important;
+}
+[data-testid="stSidebar"] div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p::first-letter {
+    font-size: 42px !important;
+    line-height: 1 !important;
+}
+[data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {
+    min-width: 42px !important;
+}
+
+/* Compact top chrome: bring the workspace up and remove the empty band */
+[data-testid="stHeader"] {
+    height: 2rem !important;
+    min-height: 2rem !important;
+    background: rgba(8,13,22,.96) !important;
+}
+[data-testid="stAppViewBlockContainer"],
+.block-container {
+    padding-top: .35rem !important;
+    margin-top: 0 !important;
+}
+[data-testid="stMainBlockContainer"] {
+    padding-top: .35rem !important;
+}
+[data-testid="stVerticalBlock"] {
+    gap: .65rem !important;
+}
+[data-testid="stDataFrame"], [data-testid="stTable"] {
+    background: #0d1727 !important;
+    color: #e5edf8 !important;
+}
 </style>
     """,
     unsafe_allow_html=True,
