@@ -166,6 +166,7 @@ def safe_filename(label):
     return cleaned or "business"
 NAV_ITEMS = [
     "Home",
+    "Summary",
     "Sales Analytics",
     "Products & Profitability",
     "Inventory",
@@ -619,132 +620,58 @@ def section_heading(eyebrow, title, subtitle=None):
 
 
 def render_home(df, daily, products, forecast, avg_units, avg_revenue):
-    """NURTURA executive overview inspired by the supplied dashboard references."""
-    section_heading(
-        "EXECUTIVE WORKSPACE / OVERVIEW",
-        "Executive overview",
-        "A single view of sales performance, product contribution, profitability, and business signals."
-    )
-
+    section_heading("WORKSPACE / OVERVIEW", "Business at a glance", "A clear view of sales performance, profitability, and areas to investigate.")
     revenue = float(df["revenue"].sum())
-    cost = float(df["estimated_cost"].sum())
     profit = float(df["gross_profit"].sum())
-    margin = profit / revenue * 100 if revenue else 0.0
+    margin = profit / revenue * 100 if revenue else 0
     units = float(df["units_sold"].sum())
-    product_count = int(df["product"].nunique())
-    recorded_days = int(df["date"].nunique())
+    cols = st.columns(4)
+    cols[0].metric("Total revenue", money(revenue))
+    cols[1].metric("Gross profit", money(profit))
+    cols[2].metric("Gross margin", f"{margin:.1f}%")
+    cols[3].metric("Units sold", number(units))
 
-    # Executive KPI strip: use only measures supported by the uploaded data.
-    kpis = st.columns(4)
-    kpis[0].metric("Recorded revenue", money(revenue))
-    kpis[1].metric("Estimated gross profit", money(profit))
-    kpis[2].metric("Gross margin", f"{margin:.1f}%")
-    kpis[3].metric("Units sold", number(units))
-
-    st.markdown("### Executive summary")
-    st.markdown(
-        '<div class="ic-panel">'
-        '<div class="ic-muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:750;margin-bottom:8px">Performance snapshot</div>'
-        f'<div style="font-size:1rem;line-height:1.75;color:#dce6f5">Across <b style="color:#ffffff">{recorded_days:,} recorded days</b> and '
-        f'<b style="color:#ffffff">{product_count:,} products</b>, the selected dataset records <b style="color:#ffffff">{money(revenue)}</b> in revenue and '
-        f'<b style="color:#ffffff">{money(profit)}</b> in estimated gross profit after <b style="color:#ffffff">{money(cost)}</b> in estimated product costs. '
-        f'The calculated gross margin is <b style="color:#7ce7c5">{margin:.1f}%</b>. These figures reflect the selected records and exclude operating expenses unless included separately in Profit Tracker.</div>'
-        '</div>', unsafe_allow_html=True
-    )
-
-    # Dashboard grid modeled on the reference: trend, product ranking, category mix, and profit.
-    top_left, top_right = st.columns([1.55, 1])
-    with top_left:
+    left, right = st.columns([1.65, 1])
+    with left:
         st.markdown("### Revenue performance")
-        st.caption("Daily recorded revenue across the selected date range")
-        trend = line_figure(daily, "date", "revenue", height=330)
-        trend.update_traces(line=dict(color=CHART_COLORS[0], width=3), marker=dict(size=4))
-        st.plotly_chart(trend, use_container_width=True, config={"displaylogo": False})
-    with top_right:
+        st.caption("Daily recorded revenue across the selected period")
+        fig = line_figure(daily, "date", "revenue", height=360)
+        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    with right:
         st.markdown("### Revenue by product")
-        st.caption("Highest-revenue products in the selected dataset")
-        top_products = products.head(7).sort_values("revenue", ascending=True)
-        fig = px.bar(
-            top_products, x="revenue", y="product", orientation="h", text="revenue",
-            color="revenue", color_continuous_scale=[[0, "#4269b2"], [1, "#7da2ff"]]
-        )
-        fig.update_traces(texttemplate="₹%{x:,.0f}", textposition="outside", cliponaxis=False,
-                          hovertemplate="%{y}<br>Revenue: ₹%{x:,.2f}<extra></extra>")
-        fig.update_layout(coloraxis_showscale=False, margin=dict(l=8, r=35, t=15, b=15))
-        fig.update_xaxes(title=None, showgrid=True, gridcolor=CHART_GRID, tickformat="~s")
-        fig.update_yaxes(title=None, showgrid=False, categoryorder="total ascending")
-        st.plotly_chart(polish_chart(fig, height=330, show_legend=False), use_container_width=True,
-                        config={"displaylogo": False})
+        st.caption("Top products ranked by revenue")
+        fig = bar_figure(products.head(7).sort_values("revenue"), "revenue", "product", horizontal=True, color=CHART_COLORS[0], height=360)
+        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+        st.caption("Ranked by recorded revenue.")
 
-    bottom_left, bottom_mid, bottom_right = st.columns([1, 1, 1])
-    with bottom_left:
-        st.markdown("### Cost vs. gross profit")
-        st.caption("Estimated product costs compared with gross profit")
-        mix = pd.DataFrame({"Metric": ["Estimated cost", "Gross profit"], "Amount": [cost, profit]})
-        fig = px.pie(mix, names="Metric", values="Amount", hole=.58,
-                     color="Metric", color_discrete_map={"Estimated cost": CHART_COLORS[2], "Gross profit": CHART_COLORS[1]})
-        fig.update_traces(textposition="inside", textinfo="label+percent",
-                          hovertemplate="%{label}<br>₹%{value:,.2f}<extra></extra>",
-                          marker=dict(line=dict(color="#0a101b", width=3)))
-        fig.update_layout(margin=dict(l=8, r=8, t=10, b=8), showlegend=False)
-        st.plotly_chart(polish_chart(fig, height=290, show_legend=False), use_container_width=True,
-                        config={"displaylogo": False})
-    with bottom_mid:
-        st.markdown("### Gross profit by product")
-        st.caption("Products ranked by estimated gross profit")
-        profit_products = products.sort_values("gross_profit", ascending=True).tail(6)
-        fig = px.bar(profit_products, x="gross_profit", y="product", orientation="h", text="gross_profit")
-        fig.update_traces(marker_color=CHART_COLORS[1], texttemplate="₹%{x:,.0f}", textposition="outside",
-                          cliponaxis=False, hovertemplate="%{y}<br>Gross profit: ₹%{x:,.2f}<extra></extra>")
-        fig.update_layout(margin=dict(l=8, r=35, t=10, b=12))
-        fig.update_xaxes(title=None, tickformat="~s", gridcolor=CHART_GRID)
-        fig.update_yaxes(title=None, showgrid=False)
-        st.plotly_chart(polish_chart(fig, height=290, show_legend=False), use_container_width=True,
-                        config={"displaylogo": False})
-    with bottom_right:
-        st.markdown("### NURTURA Pulse")
-        st.caption("Rule-based signals from the selected records")
-        signals = []
-        if len(daily) >= 14:
-            current = float(daily.tail(7)["revenue"].mean())
-            previous = float(daily.iloc[-14:-7]["revenue"].mean())
-            if previous > 0:
-                change = (current - previous) / previous * 100
-                if change >= 3:
-                    signals.append(("Revenue momentum", f"Recent average daily revenue is up {change:.1f}% versus the previous seven recorded days."))
-                elif change <= -3:
-                    signals.append(("Revenue to review", f"Recent average daily revenue is down {abs(change):.1f}%. Review demand, pricing, and product mix."))
-                else:
-                    signals.append(("Revenue trend", f"Recent average daily revenue is broadly stable ({change:+.1f}%)."))
-        if not products.empty:
-            leader = products.sort_values("revenue", ascending=False).iloc[0]
-            profit_leader = products.sort_values("gross_profit", ascending=False).iloc[0]
-            signals.append(("Revenue leader", f"{leader['product']} leads recorded revenue at {money(leader['revenue'])}."))
-            signals.append(("Profit leader", f"{profit_leader['product']} leads estimated gross profit at {money(profit_leader['gross_profit'])}."))
-        if "stock_on_hand" in df.columns:
-            stock = df.dropna(subset=["stock_on_hand"]).groupby("product")["stock_on_hand"].min()
-            low_stock = stock[stock <= 10]
-            if len(low_stock):
-                signals.append(("Inventory check", f"{len(low_stock)} product(s) have a recorded minimum stock of 10 units or less."))
-        if not signals:
-            signals.append(("Data note", "More daily records are needed to compare recent revenue momentum."))
-        for label, message in signals[:4]:
-            st.markdown(f'<div class="ic-alert"><b>{label}</b><br>{message}</div>', unsafe_allow_html=True)
-        st.caption("Signals are descriptive, not causal predictions. Check the source data before acting.")
-
-    st.markdown("### Recent daily performance")
-    recent = daily.tail(10).sort_values("date", ascending=False).copy()
-    recent["date"] = recent["date"].dt.strftime("%d %b %Y")
-    display_table(recent.rename(columns={
-        "date": "Date", "units_sold": "Units sold", "revenue": "Revenue",
-        "estimated_cost": "Estimated cost", "gross_profit": "Gross profit",
-        "gross_margin_pct": "Gross margin (%)"
-    }), height=330, formats={
-        "Units sold": "{:,.0f}", "Revenue": "₹{:,.2f}",
-        "Estimated cost": "₹{:,.2f}", "Gross profit": "₹{:,.2f}",
-        "Gross margin (%)": "{:.1f}%"
-    })
-    st.caption("All measures use the selected date and product filters. Revenue is units × selling price; gross profit excludes operating expenses and taxes.")
+    st.markdown("### Business signals")
+    signals = []
+    if len(daily) >= 14:
+        current = float(daily.tail(7)["revenue"].mean())
+        previous = float(daily.iloc[-14:-7]["revenue"].mean())
+        if previous > 0:
+            change = (current - previous) / previous * 100
+            if change >= 3:
+                signals.append(("Positive", f"Recent average daily revenue is up {change:.1f}% compared with the prior seven recorded days."))
+            elif change <= -3:
+                signals.append(("Review", f"Recent average daily revenue is down {abs(change):.1f}% compared with the prior seven recorded days. Review product mix, prices, and demand."))
+            else:
+                signals.append(("Stable", f"Recent average daily revenue is broadly stable ({change:+.1f}%) versus the prior seven recorded days."))
+    if not products.empty:
+        top = products.iloc[0]
+        signals.append(("Top revenue", f"{top['product']} has the highest recorded revenue at {money(top['revenue'])}. Revenue leadership does not necessarily mean the highest margin."))
+        low_profit = products.sort_values("gross_profit").iloc[0]
+        signals.append(("Profit review", f"{low_profit['product']} has the lowest gross profit in the product summary ({money(low_profit['gross_profit'])}); review its volume, pricing, and cost assumptions."))
+    if "stock_on_hand" in df.columns:
+        stock = df.dropna(subset=["stock_on_hand"]).groupby("product")["stock_on_hand"].min()
+        low_stock = stock[stock <= 10]
+        if len(low_stock):
+            signals.append(("Inventory", f"{len(low_stock)} product(s) have a minimum recorded stock of 10 or fewer units. Confirm current stock before replenishing."))
+    if not signals:
+        signals.append(("Data note", "Upload at least 14 daily records for period comparisons and more reliable baseline evaluation."))
+    for label, message in signals:
+        st.markdown(f'<div class="ic-alert"><b>{label}</b><br>{message}</div>', unsafe_allow_html=True)
+    st.caption("Insights are rule-based summaries of the uploaded data, not guarantees or causal explanations.")
 
 
 def main():
@@ -764,6 +691,7 @@ def main():
         """, unsafe_allow_html=True)
         nav_labels = {
             "Home": "▦   Overview",
+            "Summary": "▤   Summary",
             "Sales Analytics": "↗   Sales Analytics",
             "Products & Profitability": "◇   Products & Profitability",
             "Inventory": "⬡   Inventory",
@@ -857,6 +785,135 @@ def main():
 
     if page == "Home":
         render_home(filtered, daily, products, forecast, avg_units, avg_revenue)
+
+    elif page == "Summary":
+        section_heading(
+            "DECISION SUPPORT / SUMMARY",
+            "Executive Summary",
+            "A decision-focused brief: what is happening, what may need attention, and what to consider next."
+        )
+
+        total_revenue = float(filtered["revenue"].sum())
+        total_cost = float(filtered["estimated_cost"].sum())
+        total_profit = float(filtered["gross_profit"].sum())
+        total_units = float(filtered["units_sold"].sum())
+        total_margin = (total_profit / total_revenue * 100) if total_revenue else 0.0
+        n_days = int(daily["date"].nunique())
+        avg_day_revenue = total_revenue / n_days if n_days else 0.0
+        avg_day_profit = total_profit / n_days if n_days else 0.0
+
+        # Decision-ready headline metrics (distinct from the visual Overview page).
+        k1, k2, k3, k4, k5 = st.columns(5)
+        k1.metric("Gross profit", money(total_profit))
+        k2.metric("Gross margin", f"{total_margin:.1f}%")
+        k3.metric("Avg. revenue / day", money(avg_day_revenue))
+        k4.metric("Avg. profit / day", money(avg_day_profit))
+        k5.metric("Records / days", f"{len(filtered):,} / {n_days:,}")
+
+        st.markdown("### Management brief")
+        brief_left, brief_right = st.columns([1.15, 1])
+        with brief_left:
+            if len(daily) >= 14:
+                recent_rev = float(daily.tail(7)["revenue"].mean())
+                prior_rev = float(daily.iloc[-14:-7]["revenue"].mean())
+                recent_profit = float(daily.tail(7)["gross_profit"].mean())
+                prior_profit = float(daily.iloc[-14:-7]["gross_profit"].mean())
+                rev_change = ((recent_rev - prior_rev) / prior_rev * 100) if prior_rev else None
+                profit_change = ((recent_profit - prior_profit) / prior_profit * 100) if prior_profit else None
+                st.markdown("#### Recent momentum")
+                if rev_change is None:
+                    st.info("Revenue momentum cannot be compared because the prior period has zero recorded revenue.")
+                elif rev_change >= 3:
+                    st.success(f"Recent average daily revenue is up {rev_change:.1f}% versus the previous seven recorded days.")
+                elif rev_change <= -3:
+                    st.warning(f"Recent average daily revenue is down {abs(rev_change):.1f}%. Review demand, product mix, discounts, and stock availability.")
+                else:
+                    st.info(f"Revenue is broadly stable ({rev_change:+.1f}%) versus the previous seven recorded days.")
+                if profit_change is not None:
+                    st.caption(f"Average daily gross profit changed {profit_change:+.1f}% over the same comparison.")
+            else:
+                st.info("For a useful week-over-week comparison, provide at least 14 days of records.")
+
+            st.markdown("#### Profitability interpretation")
+            if total_margin < 15:
+                st.warning(f"Gross margin is {total_margin:.1f}%. Check unit costs, selling prices, discounting, and product mix before scaling sales.")
+            elif total_margin < 30:
+                st.info(f"Gross margin is {total_margin:.1f}%. Review margins by product to find where improvements may have the most impact.")
+            else:
+                st.success(f"Gross margin is {total_margin:.1f}%. Validate that all relevant unit costs are included; gross margin excludes operating expenses and taxes.")
+
+        with brief_right:
+            st.markdown("#### Products to review")
+            if not products.empty:
+                best_revenue = products.sort_values("revenue", ascending=False).iloc[0]
+                best_profit = products.sort_values("gross_profit", ascending=False).iloc[0]
+                weakest_profit = products.sort_values("gross_profit", ascending=True).iloc[0]
+                st.markdown(
+                    f'<div class="ic-alert"><b>Revenue leader</b><br>{best_revenue["product"]} · {money(best_revenue["revenue"])} revenue.</div>',
+                    unsafe_allow_html=True
+                )
+                st.markdown(
+                    f'<div class="ic-alert"><b>Gross-profit leader</b><br>{best_profit["product"]} · {money(best_profit["gross_profit"])} gross profit.</div>',
+                    unsafe_allow_html=True
+                )
+                st.markdown(
+                    f'<div class="ic-alert"><b>Lowest gross profit</b><br>{weakest_profit["product"]} · {money(weakest_profit["gross_profit"])}. Check volume, price, and unit-cost assumptions before changing the product.</div>',
+                    unsafe_allow_html=True
+                )
+            else:
+                st.caption("Product-level conclusions need a product column in the source data.")
+
+        st.markdown("### Financial composition")
+        chart_left, chart_right = st.columns(2)
+        with chart_left:
+            st.markdown("#### Revenue, cost, and gross profit")
+            composition = pd.DataFrame({
+                "Category": ["Estimated cost", "Gross profit"],
+                "Amount": [total_cost, total_profit],
+            })
+            fig = px.pie(
+                composition, names="Category", values="Amount", hole=0.58,
+                color="Category",
+                color_discrete_map={"Estimated cost": CHART_COLORS[2], "Gross profit": CHART_COLORS[1]},
+            )
+            fig.update_traces(textposition="inside", textinfo="label+percent")
+            st.plotly_chart(polish_chart(fig, height=310), use_container_width=True, config={"displaylogo": False})
+            st.caption("Estimated cost and gross profit add up to revenue under the app's current unit-cost model.")
+
+        with chart_right:
+            st.markdown("#### Forecast reference")
+            if not forecast.empty:
+                forecast_revenue = float(forecast["Forecast revenue"].sum()) if "Forecast revenue" in forecast.columns else None
+                forecast_units = float(forecast["Forecast units"].sum()) if "Forecast units" in forecast.columns else None
+                f1, f2 = st.columns(2)
+                if forecast_revenue is not None:
+                    f1.metric("Next 7 days · forecast revenue", money(forecast_revenue))
+                if forecast_units is not None:
+                    f2.metric("Next 7 days · forecast units", number(forecast_units))
+                st.caption("Baseline estimate based on recent recorded averages; not a guarantee or a demand model.")
+                if "Date" in forecast.columns:
+                    fig = line_figure(forecast.rename(columns={"Date": "date", "Forecast revenue": "forecast_revenue"}), "date", "forecast_revenue", height=250) if "Forecast revenue" in forecast.columns else None
+                    if fig is not None:
+                        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+            else:
+                st.info("Forecast is unavailable for the current dataset.")
+
+        if "stock_on_hand" in filtered.columns:
+            st.markdown("### Operational watchlist")
+            stock = filtered.dropna(subset=["stock_on_hand"]).groupby("product", as_index=False)["stock_on_hand"].min()
+            low_stock = stock[stock["stock_on_hand"] <= 10].sort_values("stock_on_hand")
+            if low_stock.empty:
+                st.success("No products are at or below the illustrative 10-unit stock review threshold in the selected records.")
+            else:
+                st.warning(f"{len(low_stock)} product(s) are at or below the illustrative 10-unit threshold. Verify live stock before reordering.")
+                display_table(low_stock.rename(columns={"product": "Product", "stock_on_hand": "Minimum recorded stock"}), height=220)
+
+        st.markdown("### Decision checklist")
+        st.write("- Confirm the date range and filters represent the period you intend to review.")
+        st.write("- Check whether the revenue leader also contributes strong gross profit; high revenue alone does not prove high profitability.")
+        st.write("- Investigate falling revenue or margin alongside stock availability, prices, unit costs, and discounts.")
+        st.write("- Treat forecasts and stock flags as review prompts, not automatic instructions to buy, price, or discontinue products.")
+        st.caption("Financial figures are derived from supplied data. Gross profit excludes operating expenses, taxes, and other accounting adjustments; validate source records before acting.")
 
     elif page == "Sales Analytics":
         section_heading("ANALYTICS / SALES", "Sales analytics", "Explore revenue, sales volume, costs, and profitability over time.")
