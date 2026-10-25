@@ -1213,9 +1213,16 @@ def main():
                 y="amount",
                 color="metric",
                 markers=True,
-                title="Monthly financial performance"
+                color_discrete_sequence=CHART_COLORS,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            fig.update_layout(
+                paper_bgcolor="#0d1727",
+                plot_bgcolor="#0d1727",
+                font=dict(color="#c6d2e3"),
+                margin=dict(t=24, l=18, r=18, b=18),
+                legend=dict(font=dict(color="#c6d2e3")),
+            )
+            st.plotly_chart(polish_chart(fig, height=380), use_container_width=True)
     
         st.markdown("### Expense breakdown")
         if not expenses.empty:
@@ -1228,8 +1235,21 @@ def main():
                 names="category",
                 values="amount",
                 hole=0.45,
-                title="Expenses by category",
                 color_discrete_sequence=CHART_COLORS,
+            )
+            pie.update_traces(
+                textposition="inside",
+                textinfo="label+percent",
+                insidetextfont=dict(color="#ffffff", size=12),
+                marker=dict(line=dict(color="#0d1727", width=3)),
+                hovertemplate="<b>%{label}</b><br>Amount: ₹%{value:,.2f}<br>Share: %{percent}<extra></extra>",
+            )
+            pie.update_layout(
+                paper_bgcolor="#0d1727",
+                plot_bgcolor="#0d1727",
+                font=dict(color="#c6d2e3"),
+                legend=dict(font=dict(color="#c6d2e3")),
+                margin=dict(t=24, l=18, r=18, b=18),
             )
             st.plotly_chart(polish_chart(pie, height=420), use_container_width=True)
         else:
@@ -1243,8 +1263,21 @@ def main():
                 names="category",
                 values="amount",
                 hole=0.45,
-                title="Example expense breakdown · demo values",
                 color_discrete_sequence=CHART_COLORS,
+            )
+            pie.update_traces(
+                textposition="inside",
+                textinfo="label+percent",
+                insidetextfont=dict(color="#ffffff", size=12),
+                marker=dict(line=dict(color="#0d1727", width=3)),
+                hovertemplate="<b>%{label}</b><br>Amount: ₹%{value:,.2f}<br>Share: %{percent}<extra></extra>",
+            )
+            pie.update_layout(
+                paper_bgcolor="#0d1727",
+                plot_bgcolor="#0d1727",
+                font=dict(color="#c6d2e3"),
+                legend=dict(font=dict(color="#c6d2e3")),
+                margin=dict(t=24, l=18, r=18, b=18),
             )
             st.plotly_chart(polish_chart(pie, height=420), use_container_width=True)
     elif page == "Reports":
