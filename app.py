@@ -1024,7 +1024,9 @@ def main():
         else:
             display_table(accuracy.round(2), height=180, formats={"Mean absolute error (units)": "{:.2f}"})
             best = accuracy.sort_values("Mean absolute error (units)").iloc[0]
-            st.markdown(f'<div class="ic-alert"><b>Lower-error method on this test</b><br>{best["Forecast method"]} (MAE {best['Mean absolute error (units)']:.2f} units).</div>', unsafe_allow_html=True)
+            best_method = best["Forecast method"]
+            best_mae = best["Mean absolute error (units)"]
+            st.markdown(f'<div class="ic-alert"><b>Lower-error method on this test</b><br>{best_method} (MAE {best_mae:.2f} units).</div>', unsafe_allow_html=True)
         st.markdown("### Business insights")
         if len(daily) >= 14:
             current = daily.tail(7)["revenue"].mean()
@@ -1049,160 +1051,160 @@ def main():
         "Daily & monthly profit",
         "Track sales, costs, and operating expenses."
     )
-
-    st.markdown("### Upload operating expenses")
-    expense_file = st.file_uploader(
-        "Upload expense CSV",
-        type=["csv"],
-        key="profit_tracker_expenses"
-    )
-
-    expenses = pd.DataFrame(
-        columns=["date", "category", "amount"]
-    )
-
-    if expense_file is not None:
-        try:
-            expenses = pd.read_csv(expense_file)
-            expenses.columns = [
-                str(c).strip().lower() for c in expenses.columns
-            ]
-
-            if not {"date", "category", "amount"}.issubset(
-                expenses.columns
-            ):
-                st.error(
-                    "CSV needs date, category, amount columns."
-                )
+    
+        st.markdown("### Upload operating expenses")
+        expense_file = st.file_uploader(
+            "Upload expense CSV",
+            type=["csv"],
+            key="profit_tracker_expenses"
+        )
+    
+        expenses = pd.DataFrame(
+            columns=["date", "category", "amount"]
+        )
+    
+        if expense_file is not None:
+            try:
+                expenses = pd.read_csv(expense_file)
+                expenses.columns = [
+                    str(c).strip().lower() for c in expenses.columns
+                ]
+    
+                if not {"date", "category", "amount"}.issubset(
+                    expenses.columns
+                ):
+                    st.error(
+                        "CSV needs date, category, amount columns."
+                    )
+                    expenses = pd.DataFrame(
+                        columns=["date", "category", "amount"]
+                    )
+                else:
+                    expenses["date"] = pd.to_datetime(
+                        expenses["date"], errors="coerce"
+                    )
+                    expenses["amount"] = pd.to_numeric(
+                        expenses["amount"], errors="coerce"
+                    )
+                    expenses["category"] = (
+                        expenses["category"].astype(str).str.strip()
+                    )
+                    expenses = expenses.dropna(
+                        subset=["date", "amount"]
+                    )
+                    expenses = expenses[
+                        (expenses["amount"] >= 0)
+                        & (expenses["category"] != "")
+                    ]
+    
+            except Exception:
+                st.error("Could not read the expense CSV.")
                 expenses = pd.DataFrame(
                     columns=["date", "category", "amount"]
                 )
-            else:
-                expenses["date"] = pd.to_datetime(
-                    expenses["date"], errors="coerce"
-                )
-                expenses["amount"] = pd.to_numeric(
-                    expenses["amount"], errors="coerce"
-                )
-                expenses["category"] = (
-                    expenses["category"].astype(str).str.strip()
-                )
-                expenses = expenses.dropna(
-                    subset=["date", "amount"]
-                )
-                expenses = expenses[
-                    (expenses["amount"] >= 0)
-                    & (expenses["category"] != "")
-                ]
-
-        except Exception:
-            st.error("Could not read the expense CSV.")
-            expenses = pd.DataFrame(
-                columns=["date", "category", "amount"]
+    
+        tracker = daily.copy()
+        tracker["date"] = pd.to_datetime(
+            tracker["date"], errors="coerce"
+        )
+        tracker = tracker.dropna(subset=["date"])
+    
+        if expenses.empty:
+            expense_daily = pd.DataFrame(
+                columns=["date", "operating_expenses"]
             )
-
-    tracker = daily.copy()
-    tracker["date"] = pd.to_datetime(
-        tracker["date"], errors="coerce"
-    )
-    tracker = tracker.dropna(subset=["date"])
-
-    if expenses.empty:
-        expense_daily = pd.DataFrame(
-            columns=["date", "operating_expenses"]
+        else:
+            expense_daily = (
+                expenses.groupby("date", as_index=False)["amount"]
+                .sum()
+                .rename(columns={"amount": "operating_expenses"})
+            )
+    
+        tracker = tracker.merge(
+            expense_daily, on="date", how="left"
         )
-    else:
-        expense_daily = (
-            expenses.groupby("date", as_index=False)["amount"]
-            .sum()
-            .rename(columns={"amount": "operating_expenses"})
+        tracker["operating_expenses"] = (
+            tracker["operating_expenses"].fillna(0)
         )
-
-    tracker = tracker.merge(
-        expense_daily, on="date", how="left"
-    )
-    tracker["operating_expenses"] = (
-        tracker["operating_expenses"].fillna(0)
-    )
-    tracker["profit_after_expenses"] = (
-        tracker["gross_profit"] - tracker["operating_expenses"]
-    )
-    tracker["month"] = tracker["date"].dt.to_period("M").astype(str)
-
-    st.caption(
-        "Profit after expenses = existing gross profit minus "
-        "uploaded operating expenses. Taxes and unprovided costs "
-        "are excluded."
-    )
-
-    a, b, c, d = st.columns(4)
-    a.metric("Revenue", money(tracker["revenue"].sum()))
-    b.metric("Gross profit", money(tracker["gross_profit"].sum()))
-    c.metric(
-        "Operating expenses",
-        money(tracker["operating_expenses"].sum())
-    )
-    d.metric(
-        "Profit after expenses",
-        money(tracker["profit_after_expenses"].sum())
-    )
-
-    st.markdown("### Daily profit & loss")
-    st.dataframe(
-        tracker[
-            [
-                "date", "revenue", "estimated_cost",
-                "gross_profit", "operating_expenses",
-                "profit_after_expenses"
-            ]
-        ],
-        use_container_width=True,
-        hide_index=True
-    )
-
-    st.markdown("### Monthly P&L")
-    monthly = tracker.groupby("month", as_index=False).agg(
-        revenue=("revenue", "sum"),
-        gross_profit=("gross_profit", "sum"),
-        operating_expenses=("operating_expenses", "sum"),
-        profit_after_expenses=("profit_after_expenses", "sum")
-    )
-
-    st.dataframe(monthly, use_container_width=True, hide_index=True)
-
-    if not monthly.empty:
-        chart_data = monthly.melt(
-            id_vars="month",
-            value_vars=["revenue", "gross_profit", "profit_after_expenses"],
-            var_name="metric",
-            value_name="amount"
+        tracker["profit_after_expenses"] = (
+            tracker["gross_profit"] - tracker["operating_expenses"]
         )
-        fig = px.line(
-            chart_data,
-            x="month",
-            y="amount",
-            color="metric",
-            markers=True,
-            title="Monthly financial performance"
+        tracker["month"] = tracker["date"].dt.to_period("M").astype(str)
+    
+        st.caption(
+            "Profit after expenses = existing gross profit minus "
+            "uploaded operating expenses. Taxes and unprovided costs "
+            "are excluded."
         )
-        st.plotly_chart(fig, use_container_width=True)
-
-    st.markdown("### Expense breakdown")
-    if not expenses.empty:
-        category_totals = expenses.groupby(
-            "category", as_index=False
-        )["amount"].sum()
-
-        pie = px.pie(
-            category_totals,
-            names="category",
-            values="amount",
-            hole=0.45,
-            title="Expenses by category"
+    
+        a, b, c, d = st.columns(4)
+        a.metric("Revenue", money(tracker["revenue"].sum()))
+        b.metric("Gross profit", money(tracker["gross_profit"].sum()))
+        c.metric(
+            "Operating expenses",
+            money(tracker["operating_expenses"].sum())
         )
-        st.plotly_chart(pie, use_container_width=True)
-    else:
-        st.info("Upload an expense CSV to display the expense pie chart.")
+        d.metric(
+            "Profit after expenses",
+            money(tracker["profit_after_expenses"].sum())
+        )
+    
+        st.markdown("### Daily profit & loss")
+        st.dataframe(
+            tracker[
+                [
+                    "date", "revenue", "estimated_cost",
+                    "gross_profit", "operating_expenses",
+                    "profit_after_expenses"
+                ]
+            ],
+            use_container_width=True,
+            hide_index=True
+        )
+    
+        st.markdown("### Monthly P&L")
+        monthly = tracker.groupby("month", as_index=False).agg(
+            revenue=("revenue", "sum"),
+            gross_profit=("gross_profit", "sum"),
+            operating_expenses=("operating_expenses", "sum"),
+            profit_after_expenses=("profit_after_expenses", "sum")
+        )
+    
+        st.dataframe(monthly, use_container_width=True, hide_index=True)
+    
+        if not monthly.empty:
+            chart_data = monthly.melt(
+                id_vars="month",
+                value_vars=["revenue", "gross_profit", "profit_after_expenses"],
+                var_name="metric",
+                value_name="amount"
+            )
+            fig = px.line(
+                chart_data,
+                x="month",
+                y="amount",
+                color="metric",
+                markers=True,
+                title="Monthly financial performance"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+    
+        st.markdown("### Expense breakdown")
+        if not expenses.empty:
+            category_totals = expenses.groupby(
+                "category", as_index=False
+            )["amount"].sum()
+    
+            pie = px.pie(
+                category_totals,
+                names="category",
+                values="amount",
+                hole=0.45,
+                title="Expenses by category"
+            )
+            st.plotly_chart(pie, use_container_width=True)
+        else:
+            st.info("Upload an expense CSV to display the expense pie chart.")
     elif page == "Reports":
         section_heading("WORKSPACE / REPORTS", "Reports & exports", "Generate a business report from the current filtered data.")
         revenue = filtered["revenue"].sum()
