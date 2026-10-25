@@ -88,18 +88,31 @@ st.markdown(
 [data-testid="stSidebar"] div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p { font-size: 21px !important; }
 [data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child { min-width: 42px !important; }
 
-/* Remove the blank Streamlit top band and lift the page content */
+/* Keep Streamlit's header available so the sidebar can always be reopened.
+   Make it compact and transparent rather than hiding it entirely. */
 [data-testid="stHeader"] {
-    display: none !important;
-    height: 0 !important;
-    min-height: 0 !important;
+    display: flex !important;
+    visibility: visible !important;
+    height: 2.35rem !important;
+    min-height: 2.35rem !important;
+    background: rgba(8, 13, 22, 0.96) !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 999990 !important;
+}
+[data-testid="stHeader"] button,
+[data-testid="stHeader"] [data-testid="stSidebarCollapsedControl"],
+[data-testid="stSidebarCollapsedControl"] {
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
 [data-testid="stAppViewContainer"] > .main,
 [data-testid="stMain"],
 [data-testid="stMainBlockContainer"],
 [data-testid="stAppViewBlockContainer"],
 .block-container {
-    padding-top: 0 !important;
+    padding-top: 0.15rem !important;
     margin-top: 0 !important;
 }
 .block-container {
