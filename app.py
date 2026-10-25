@@ -39,14 +39,13 @@ st.markdown(
     <style>
     :root { color-scheme: dark; }
     .stApp { background: radial-gradient(ellipse at 8% 0%, #14233a 0%, #0a101b 34%, #080d16 100%); color: #e8eef8; }
-    [data-testid="stHeader"] { background: rgba(8,13,22,.0); height: 0 !important; min-height: 0 !important; }
-[data-testid="stAppViewContainer"] .main .block-container { padding-top: .55rem !important; margin-top: 0 !important; }
+    [data-testid="stHeader"] { background: rgba(8,13,22,.88); backdrop-filter: blur(14px); }
     [data-testid="stToolbar"] { right: 1rem; }
     [data-testid="stSidebar"] { background: linear-gradient(180deg,#0a1424 0%,#08111f 100%); border-right: 1px solid #203149; }
     [data-testid="stSidebar"] > div:first-child { padding-top: 1rem; }
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: #a8b6ca; }
     [data-testid="stSidebar"] hr { margin: .9rem 0; border-color: #24334a !important; }
-    .block-container { padding-top: .55rem !important; padding-bottom: 2rem; max-width: 1600px; }
+    .block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1600px; }
     h1, h2, h3 { color: #f4f7fc !important; letter-spacing: -.035em; }
     h1 { font-weight: 720 !important; font-size: clamp(2rem, 3vw, 2.75rem) !important; }
     h2, h3 { font-weight: 650 !important; }
@@ -81,11 +80,6 @@ st.markdown(
     [data-testid="stFileUploader"] section { border-color: #30445f; background: rgba(17,29,47,.8); border-radius: 12px; }
     [data-testid="stDateInput"] input, [data-testid="stTextInput"] input, [data-testid="stSelectbox"] [data-baseweb="select"], [data-testid="stMultiSelect"] [data-baseweb="select"] { background: #111d2f; border-color:#2e425d; border-radius:9px; }
     [data-testid="stAlert"] { border-radius: 11px; }
-    .ic-pulse-card { min-height: 132px; height:100%; padding:17px 18px; border-radius:14px; border:1px solid #2a3d58; border-top:3px solid var(--pulse-accent); background:linear-gradient(145deg,rgba(20,34,54,.98),rgba(13,23,38,.98)); box-shadow:0 8px 22px rgba(0,0,0,.12); }
-    .ic-pulse-label { color:#f1f5fc; font-size:.92rem; font-weight:750; margin-bottom:9px; }
-    .ic-pulse-message { color:#b7c6da; font-size:.86rem; line-height:1.55; }
-    .ic-eyebrow { margin-top:0 !important; }
-
     hr { border-color: #26374f !important; }
 
 /* Dashboard spacing and typography */
@@ -625,134 +619,170 @@ def section_heading(eyebrow, title, subtitle=None):
 
 
 def render_home(df, daily, products, forecast, avg_units, avg_revenue):
-    """Executive overview inspired by modern BI dashboards, using NURTURA styling."""
+    """NURTURA executive summary combining pulse insights and dashboard overview."""
     section_heading(
-        "WORKSPACE / EXECUTIVE OVERVIEW",
-        "Business at a glance",
-        "One connected view of performance, product contribution, and the signals worth investigating."
+        "EXECUTIVE WORKSPACE / SUMMARY",
+        "Executive summary",
+        "One consolidated view of sales performance, product contribution, profitability, and business signals."
     )
 
     revenue = float(df["revenue"].sum())
-    profit = float(df["gross_profit"].sum())
     cost = float(df["estimated_cost"].sum())
-    margin = profit / revenue * 100 if revenue else 0
+    profit = float(df["gross_profit"].sum())
+    margin = profit / revenue * 100 if revenue else 0.0
     units = float(df["units_sold"].sum())
-    order_count = int(df["order_id"].nunique()) if "order_id" in df.columns else None
-    product_count = int(df["product"].nunique()) if "product" in df.columns else len(products)
+    product_count = int(df["product"].nunique())
+    day_count = int(daily["date"].nunique())
+    avg_daily_revenue = float(daily["revenue"].mean()) if not daily.empty else 0.0
 
-    # Executive KPI strip — inspired by the reference dashboard's summary cards.
-    cols = st.columns(4)
-    cols[0].metric("Total revenue", money(revenue))
-    cols[1].metric("Gross profit", money(profit))
-    cols[2].metric("Gross margin", f"{margin:.1f}%")
-    cols[3].metric("Units sold", number(units))
+    # Feature 1: Executive KPI strip inspired by sales-cloud summary dashboards.
+    st.markdown("### Performance snapshot")
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Total revenue", money(revenue))
+    k2.metric("Gross profit", money(profit))
+    k3.metric("Gross margin", f"{margin:.1f}%")
+    k4.metric("Units sold", number(units))
+    k5, k6, k7, k8 = st.columns(4)
+    k5.metric("Estimated cost", money(cost))
+    k6.metric("Products tracked", number(product_count))
+    k7.metric("Days recorded", number(day_count))
+    k8.metric("Average daily revenue", money(avg_daily_revenue))
 
-    # NURTURA Pulse — the concise natural-language summary inspired by the first reference.
+    st.markdown("---")
+
+    # Feature 2: Multi-panel overview with trend and product rankings.
+    left, right = st.columns([1.55, 1], gap="large")
+    with left:
+        st.markdown("### Revenue performance")
+        st.caption("Recorded daily revenue across the selected date range")
+        fig = line_figure(daily, "date", "revenue", height=340)
+        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+    with right:
+        st.markdown("### Top products by revenue")
+        st.caption("Highest recorded revenue contributors")
+        top_products = products.head(7).sort_values("revenue")
+        if not top_products.empty:
+            fig = bar_figure(
+                top_products, "revenue", "product", horizontal=True,
+                color=CHART_COLORS[0], height=340
+            )
+            st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+        else:
+            st.info("Product-level data is not available yet.")
+
+    # Secondary chart row for product revenue mix and profitability.
+    st.markdown("### Product performance")
+    pleft, pright = st.columns(2, gap="large")
+    with pleft:
+        st.markdown("#### Revenue mix")
+        if not products.empty and float(products["revenue"].sum()) > 0:
+            mix = products.nlargest(6, "revenue")[["product", "revenue"]].copy()
+            other_revenue = float(products["revenue"].sum() - mix["revenue"].sum())
+            if other_revenue > 0:
+                mix = pd.concat(
+                    [mix, pd.DataFrame([{"product": "Other products", "revenue": other_revenue}])],
+                    ignore_index=True
+                )
+            pie = px.pie(
+                mix, names="product", values="revenue", hole=0.52,
+                color_discrete_sequence=CHART_COLORS
+            )
+            pie.update_traces(
+                textposition="inside", textinfo="percent",
+                marker=dict(line=dict(color="#0d1727", width=3)),
+                hovertemplate="<b>%{label}</b><br>Revenue: ₹%{value:,.2f}<br>Share: %{percent}<extra></extra>"
+            )
+            pie.update_layout(
+                margin=dict(l=12, r=12, t=18, b=12),
+                legend=dict(orientation="h", yanchor="bottom", y=-0.12, x=0)
+            )
+            st.plotly_chart(polish_chart(pie, height=330), use_container_width=True)
+        else:
+            st.info("Revenue mix will appear when product revenue is available.")
+    with pright:
+        st.markdown("#### Gross profit by product")
+        if not products.empty:
+            profit_products = products.sort_values("gross_profit").tail(7)
+            fig = bar_figure(
+                profit_products, "gross_profit", "product", horizontal=True,
+                color=CHART_COLORS[1], height=330
+            )
+            st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
+        else:
+            st.info("Product profitability will appear when product data is available.")
+
+    # Feature 3: NURTURA Pulse — concise rule-based business signals.
+    st.markdown("---")
     st.markdown("### NURTURA Pulse")
-    st.caption("A quick read of the selected data period. These are descriptive signals, not causal conclusions.")
-    pulse = []
+    st.caption("Automated observations calculated from the currently filtered dataset.")
+    signals = []
+
     if len(daily) >= 14:
         current = float(daily.tail(7)["revenue"].mean())
         previous = float(daily.iloc[-14:-7]["revenue"].mean())
-        if previous:
-            pct = (current - previous) / previous * 100
-            status = "Revenue momentum" if pct >= 0 else "Revenue to review"
-            detail = f"Average daily revenue in the latest 7 records is {abs(pct):.1f}% {'higher' if pct >= 0 else 'lower'} than the previous 7 records."
-            pulse.append((status, detail, "#49d4b4" if pct >= 0 else "#f3bd68"))
+        if previous > 0:
+            change = (current - previous) / previous * 100
+            if change >= 3:
+                signals.append(("Revenue momentum", "Positive", f"Average daily revenue is up {change:.1f}% versus the previous seven recorded days."))
+            elif change <= -3:
+                signals.append(("Revenue momentum", "Review", f"Average daily revenue is down {abs(change):.1f}% versus the previous seven recorded days. Review demand, pricing, and product mix."))
+            else:
+                signals.append(("Revenue momentum", "Stable", f"Average daily revenue is broadly stable ({change:+.1f}%) versus the previous seven recorded days."))
+
     if not products.empty:
-        top = products.iloc[0]
-        pulse.append(("Top revenue contributor", f"{top['product']} leads recorded product revenue at {money(top['revenue'])}.", "#7da2ff"))
-        weakest = products.sort_values("gross_profit").iloc[0]
-        pulse.append(("Profitability review", f"{weakest['product']} has the lowest total gross profit in the product summary ({money(weakest['gross_profit'])}). Review price, volume, and cost assumptions.", "#b59cff"))
+        top = products.sort_values("revenue", ascending=False).iloc[0]
+        best_profit = products.sort_values("gross_profit", ascending=False).iloc[0]
+        lowest_profit = products.sort_values("gross_profit", ascending=True).iloc[0]
+        signals.append(("Revenue leader", "Product", f"{top['product']} leads recorded revenue at {money(top['revenue'])}. A revenue leader is not necessarily the highest-margin product."))
+        signals.append(("Profit leader", "Product", f"{best_profit['product']} has the highest estimated gross profit at {money(best_profit['gross_profit'])}."))
+        if len(products) > 1:
+            signals.append(("Profit review", "Review", f"{lowest_profit['product']} has the lowest estimated gross profit ({money(lowest_profit['gross_profit'])}); inspect its price, cost, and sales volume."))
+
     if "stock_on_hand" in df.columns:
         stock = df.dropna(subset=["stock_on_hand"]).groupby("product")["stock_on_hand"].min()
-        low = stock[stock <= 10]
-        if len(low):
-            pulse.append(("Inventory attention", f"{len(low)} product(s) have a minimum recorded stock of 10 or fewer units. Verify live stock before replenishing.", "#f28d9d"))
-    if not pulse:
-        pulse.append(("More history improves comparisons", "Upload at least 14 daily records to enable a simple recent-period revenue comparison.", "#6ec6e8"))
+        low_stock = stock[stock <= 10]
+        if len(low_stock):
+            signals.append(("Inventory watch", "Review", f"{len(low_stock)} product(s) have a minimum recorded stock of 10 or fewer units. Verify current stock before replenishing."))
 
-    pulse_cols = st.columns(min(3, len(pulse)))
-    for i, (label, message, accent) in enumerate(pulse[:3]):
-        with pulse_cols[i]:
+    if not signals:
+        signals.append(("Data coverage", "Info", "Upload more valid daily records to enable period comparisons and stronger trend signals."))
+
+    pulse_cols = st.columns(2, gap="medium")
+    for idx, (label, status, message) in enumerate(signals):
+        with pulse_cols[idx % 2]:
             st.markdown(
-                f"<div class='ic-pulse-card' style='--pulse-accent:{accent}'>"
-                f"<div class='ic-pulse-label'>{label}</div>"
-                f"<div class='ic-pulse-message'>{message}</div></div>",
-                unsafe_allow_html=True,
+                f'<div class="ic-alert"><b>{label} · {status}</b><br>{message}</div>',
+                unsafe_allow_html=True
             )
 
-    # Main overview — sales-cloud-style performance tiles plus product mix.
-    st.markdown("### Performance overview")
-    left, right = st.columns([1.55, 1])
-    with left:
-        st.markdown("#### Revenue and gross profit trend")
-        st.caption("Daily recorded results across the selected data period")
-        fig = line_figure(daily, "date", ["revenue", "gross_profit"],
-                          labels={"revenue": "Revenue", "gross_profit": "Gross profit"}, height=350)
-        st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
-    with right:
-        st.markdown("#### Revenue mix by product")
-        st.caption("Share of recorded revenue; top products shown individually")
-        if not products.empty:
-            mix = products.head(6).copy()
-            other_revenue = float(products.iloc[6:]["revenue"].sum()) if len(products) > 6 else 0.0
-            if other_revenue > 0:
-                mix = pd.concat([mix, pd.DataFrame([{"product": "Other products", "revenue": other_revenue}])], ignore_index=True)
-            pie = px.pie(mix, names="product", values="revenue", hole=.55,
-                         color_discrete_sequence=CHART_COLORS)
-            pie.update_traces(textposition="inside", textinfo="percent",
-                              marker=dict(line=dict(color="#0a101b", width=2)),
-                              hovertemplate="<b>%{label}</b><br>Revenue: ₹%{value:,.2f}<br>Share: %{percent}<extra></extra>")
-            pie.update_layout(margin=dict(l=8, r=8, t=12, b=8), legend=dict(orientation="h", y=-.08))
-            st.plotly_chart(polish_chart(pie, height=350), use_container_width=True, config={"displaylogo": False})
-        else:
-            st.info("Add a product column to see product revenue mix.")
-
-    # Compact executive summary, inspired by the second reference dashboard.
-    st.markdown("### Executive summary")
-    summary_cols = st.columns(4)
-    summary_cols[0].metric("Estimated cost", money(cost))
-    summary_cols[1].metric("Products tracked", number(product_count))
-    summary_cols[2].metric("Average daily revenue", money(daily["revenue"].mean() if not daily.empty else 0))
-    if order_count is not None:
-        summary_cols[3].metric("Unique orders", number(order_count))
-    else:
-        summary_cols[3].metric("Days recorded", number(len(daily)))
-
-    # Reference-style analytical grid: ranking, margin, and daily summary.
-    grid_left, grid_mid, grid_right = st.columns([1.05, 1.05, 1.25])
-    with grid_left:
-        st.markdown("#### Top products by revenue")
-        if not products.empty:
-            fig = bar_figure(products.head(5).sort_values("revenue"), "revenue", "product",
-                             horizontal=True, color=CHART_COLORS[0], height=290)
-            st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
-        else:
-            st.info("Product details are not available.")
-    with grid_mid:
-        st.markdown("#### Gross profit by product")
-        if not products.empty:
-            ranked = products.sort_values("gross_profit", ascending=False).head(5).sort_values("gross_profit")
-            fig = bar_figure(ranked, "gross_profit", "product", horizontal=True,
-                             color=CHART_COLORS[1], height=290)
-            st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
-        else:
-            st.info("Product details are not available.")
-    with grid_right:
-        st.markdown("#### Daily performance snapshot")
-        recent = daily.tail(8).copy().sort_values("date", ascending=False)
-        recent["date"] = recent["date"].dt.strftime("%d %b %Y")
-        recent = recent.rename(columns={
-            "date": "Date", "revenue": "Revenue", "gross_profit": "Gross profit",
-            "units_sold": "Units sold", "gross_margin_pct": "Margin %"
-        })
-        keep = [c for c in ["Date", "Revenue", "Gross profit", "Units sold", "Margin %"] if c in recent.columns]
-        display_table(recent[keep], height=290, formats={
-            "Revenue": "₹{:,.0f}", "Gross profit": "₹{:,.0f}", "Units sold": "{:,.0f}", "Margin %": "{:.1f}%"
-        })
-
-    st.caption("Figures are calculated from the current uploaded or demo dataset. Revenue is units sold × selling price; gross profit excludes operating expenses, taxes, and other accounting adjustments.")
+    # Compact recent-performance table, like a management overview.
+    st.markdown("---")
+    st.markdown("### Recent daily performance")
+    recent_daily = daily.tail(10).sort_values("date", ascending=False).copy()
+    recent_daily = recent_daily.rename(columns={
+        "date": "Date",
+        "units_sold": "Units sold",
+        "revenue": "Revenue",
+        "estimated_cost": "Estimated cost",
+        "gross_profit": "Gross profit",
+        "gross_margin_pct": "Gross margin %",
+    })
+    display_table(
+        recent_daily,
+        height=360,
+        formats={
+            "Units sold": "{:,.0f}",
+            "Revenue": "₹{:,.2f}",
+            "Estimated cost": "₹{:,.2f}",
+            "Gross profit": "₹{:,.2f}",
+            "Gross margin %": "{:.1f}%",
+        }
+    )
+    st.caption(
+        "NURTURA Pulse uses transparent rules on the current dataset. "
+        "Financial figures are derived from supplied prices and costs; "
+        "they are not audited results or causal predictions."
+    )
 
 
 def main():
