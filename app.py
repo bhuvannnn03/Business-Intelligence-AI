@@ -1150,16 +1150,29 @@ def main():
         )
     
         st.markdown("### Daily profit & loss")
-        st.dataframe(
+        display_table(
             tracker[
                 [
                     "date", "revenue", "estimated_cost",
                     "gross_profit", "operating_expenses",
                     "profit_after_expenses"
                 ]
-            ],
-            use_container_width=True,
-            hide_index=True
+            ].rename(columns={
+                "date": "Date",
+                "revenue": "Revenue",
+                "estimated_cost": "Estimated cost",
+                "gross_profit": "Gross profit",
+                "operating_expenses": "Operating expenses",
+                "profit_after_expenses": "Profit after expenses",
+            }),
+            height=360,
+            formats={
+                "Revenue": "₹{:,.2f}",
+                "Estimated cost": "₹{:,.2f}",
+                "Gross profit": "₹{:,.2f}",
+                "Operating expenses": "₹{:,.2f}",
+                "Profit after expenses": "₹{:,.2f}",
+            },
         )
     
         st.markdown("### Monthly P&L")
@@ -1170,7 +1183,22 @@ def main():
             profit_after_expenses=("profit_after_expenses", "sum")
         )
     
-        st.dataframe(monthly, use_container_width=True, hide_index=True)
+        display_table(
+            monthly.rename(columns={
+                "month": "Month",
+                "revenue": "Revenue",
+                "gross_profit": "Gross profit",
+                "operating_expenses": "Operating expenses",
+                "profit_after_expenses": "Profit after expenses",
+            }),
+            height=260,
+            formats={
+                "Revenue": "₹{:,.2f}",
+                "Gross profit": "₹{:,.2f}",
+                "Operating expenses": "₹{:,.2f}",
+                "Profit after expenses": "₹{:,.2f}",
+            },
+        )
     
         if not monthly.empty:
             chart_data = monthly.melt(
@@ -1200,11 +1228,25 @@ def main():
                 names="category",
                 values="amount",
                 hole=0.45,
-                title="Expenses by category"
+                title="Expenses by category",
+                color_discrete_sequence=CHART_COLORS,
             )
-            st.plotly_chart(pie, use_container_width=True)
+            st.plotly_chart(polish_chart(pie, height=420), use_container_width=True)
         else:
-            st.info("Upload an expense CSV to display the expense pie chart.")
+            st.caption("Illustrative preview only — upload your own expense CSV to replace these example values.")
+            example_categories = pd.DataFrame({
+                "category": ["Rent", "Utilities", "Supplies", "Transport", "Other"],
+                "amount": [12000, 2800, 4500, 1600, 2100],
+            })
+            pie = px.pie(
+                example_categories,
+                names="category",
+                values="amount",
+                hole=0.45,
+                title="Example expense breakdown · demo values",
+                color_discrete_sequence=CHART_COLORS,
+            )
+            st.plotly_chart(polish_chart(pie, height=420), use_container_width=True)
     elif page == "Reports":
         section_heading("WORKSPACE / REPORTS", "Reports & exports", "Generate a business report from the current filtered data.")
         revenue = filtered["revenue"].sum()
