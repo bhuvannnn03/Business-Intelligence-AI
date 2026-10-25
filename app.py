@@ -121,8 +121,15 @@ st.markdown(
 [data-testid="stDataFrame"] [data-testid="stDataFrameResizable"],
 [data-testid="stDataFrame"] canvas { background-color: #0d1727 !important; }
 
-h1 { font-size: 46px !important; }
-h2 { font-size: 34px !important; }
+h1 { font-size: clamp(1.8rem, 2.4vw, 2.25rem) !important; margin-bottom: .25rem !important; }
+h2 { font-size: 1.45rem !important; }
+h3 { font-size: 1.12rem !important; }
+.block-container { padding-top: .35rem !important; padding-bottom: .75rem !important; }
+[data-testid="stVerticalBlock"] { gap: .42rem !important; }
+[data-testid="stMetric"] { padding: 12px 15px !important; min-height: 88px !important; }
+.ic-subtitle { margin-bottom: .7rem !important; }
+.ic-panel { padding: 13px 16px !important; margin-bottom: 5px !important; }
+.ic-alert { padding: 10px 12px !important; margin: 4px 0 !important; }
 h3 { font-size: 27px !important; }
 </style>
     """,
@@ -619,13 +626,12 @@ def section_heading(eyebrow, title, subtitle=None):
 
 
 def render_home(df, daily, products, forecast, avg_units, avg_revenue):
-    """NURTURA executive overview inspired by the supplied dashboard references."""
+    """Compact executive overview: aligned sections, reduced whitespace, fast scan."""
     section_heading(
         "EXECUTIVE WORKSPACE / OVERVIEW",
         "Executive overview",
-        "A single view of sales performance, product contribution, profitability, and business signals."
+        "Sales, profitability, product contribution, and business signals in one workspace."
     )
-
     revenue = float(df["revenue"].sum())
     cost = float(df["estimated_cost"].sum())
     profit = float(df["gross_profit"].sum())
@@ -634,7 +640,6 @@ def render_home(df, daily, products, forecast, avg_units, avg_revenue):
     product_count = int(df["product"].nunique())
     recorded_days = int(df["date"].nunique())
 
-    # Executive KPI strip: use only measures supported by the uploaded data.
     kpis = st.columns(4)
     kpis[0].metric("Recorded revenue", money(revenue))
     kpis[1].metric("Estimated gross profit", money(profit))
@@ -643,108 +648,121 @@ def render_home(df, daily, products, forecast, avg_units, avg_revenue):
 
     st.markdown("### Executive summary")
     st.markdown(
-        '<div class="ic-panel">'
-        '<div class="ic-muted" style="text-transform:uppercase;letter-spacing:.14em;font-weight:750;margin-bottom:8px">Performance snapshot</div>'
-        f'<div style="font-size:1rem;line-height:1.75;color:#dce6f5">Across <b style="color:#ffffff">{recorded_days:,} recorded days</b> and '
-        f'<b style="color:#ffffff">{product_count:,} products</b>, the selected dataset records <b style="color:#ffffff">{money(revenue)}</b> in revenue and '
-        f'<b style="color:#ffffff">{money(profit)}</b> in estimated gross profit after <b style="color:#ffffff">{money(cost)}</b> in estimated product costs. '
-        f'The calculated gross margin is <b style="color:#7ce7c5">{margin:.1f}%</b>. These figures reflect the selected records and exclude operating expenses unless included separately in Profit Tracker.</div>'
-        '</div>', unsafe_allow_html=True
+        '<div class="ic-panel"><div class="ic-muted" style="text-transform:uppercase;letter-spacing:.12em;font-weight:750;margin-bottom:5px">Performance snapshot</div>'
+        f'<div style="font-size:.93rem;line-height:1.55;color:#dce6f5">Across <b style="color:#fff">{recorded_days:,} recorded days</b> and '
+        f'<b style="color:#fff">{product_count:,} products</b>, the selected data records <b style="color:#fff">{money(revenue)}</b> revenue and '
+        f'<b style="color:#fff">{money(profit)}</b> estimated gross profit from <b style="color:#fff">{money(cost)}</b> estimated product costs. '
+        f'Gross margin is <b style="color:#7ce7c5">{margin:.1f}%</b>. Gross profit excludes operating expenses and taxes.</div></div>',
+        unsafe_allow_html=True
     )
 
-    # Dashboard grid modeled on the reference: trend, product ranking, category mix, and profit.
-    top_left, top_right = st.columns([1.55, 1])
+    # First row: two core views, kept at equal compact heights.
+    top_left, top_right = st.columns([1.35, 1])
     with top_left:
         st.markdown("### Revenue performance")
-        st.caption("Daily recorded revenue across the selected date range")
-        trend = line_figure(daily, "date", "revenue", height=330)
-        trend.update_traces(line=dict(color=CHART_COLORS[0], width=3), marker=dict(size=4))
+        st.caption("Daily recorded revenue")
+        trend = line_figure(daily, "date", "revenue", height=250)
+        trend.update_traces(line=dict(color=CHART_COLORS[0], width=2.5), marker=dict(size=3))
         st.plotly_chart(trend, use_container_width=True, config={"displaylogo": False})
     with top_right:
         st.markdown("### Revenue by product")
-        st.caption("Highest-revenue products in the selected dataset")
-        top_products = products.head(7).sort_values("revenue", ascending=True)
-        fig = px.bar(
-            top_products, x="revenue", y="product", orientation="h", text="revenue",
-            color="revenue", color_continuous_scale=[[0, "#4269b2"], [1, "#7da2ff"]]
-        )
+        st.caption("Top products by recorded revenue")
+        top_products = products.head(6).sort_values("revenue", ascending=True)
+        fig = px.bar(top_products, x="revenue", y="product", orientation="h", text="revenue",
+                     color="revenue", color_continuous_scale=[[0, "#4269b2"], [1, "#7da2ff"]])
         fig.update_traces(texttemplate="₹%{x:,.0f}", textposition="outside", cliponaxis=False,
                           hovertemplate="%{y}<br>Revenue: ₹%{x:,.2f}<extra></extra>")
-        fig.update_layout(coloraxis_showscale=False, margin=dict(l=8, r=35, t=15, b=15))
+        fig.update_layout(coloraxis_showscale=False, margin=dict(l=5, r=30, t=5, b=5))
         fig.update_xaxes(title=None, showgrid=True, gridcolor=CHART_GRID, tickformat="~s")
-        fig.update_yaxes(title=None, showgrid=False, categoryorder="total ascending")
-        st.plotly_chart(polish_chart(fig, height=330, show_legend=False), use_container_width=True,
+        fig.update_yaxes(title=None, showgrid=False)
+        st.plotly_chart(polish_chart(fig, height=250, show_legend=False), use_container_width=True,
                         config={"displaylogo": False})
 
-    bottom_left, bottom_mid, bottom_right = st.columns([1, 1, 1])
+    # Second row: three visual summaries only. Pulse is moved below this row to remove
+    # the large empty area created when a tall insight column shared a row with charts.
+    bottom_left, bottom_mid, bottom_right = st.columns(3)
     with bottom_left:
-        st.markdown("### Cost vs. gross profit")
-        st.caption("Estimated product costs compared with gross profit")
+        st.markdown("### Cost vs. profit")
         mix = pd.DataFrame({"Metric": ["Estimated cost", "Gross profit"], "Amount": [cost, profit]})
-        fig = px.pie(mix, names="Metric", values="Amount", hole=.58,
-                     color="Metric", color_discrete_map={"Estimated cost": CHART_COLORS[2], "Gross profit": CHART_COLORS[1]})
+        fig = px.pie(mix, names="Metric", values="Amount", hole=.58, color="Metric",
+                     color_discrete_map={"Estimated cost": CHART_COLORS[2], "Gross profit": CHART_COLORS[1]})
         fig.update_traces(textposition="inside", textinfo="label+percent",
                           hovertemplate="%{label}<br>₹%{value:,.2f}<extra></extra>",
                           marker=dict(line=dict(color="#0a101b", width=3)))
-        fig.update_layout(margin=dict(l=8, r=8, t=10, b=8), showlegend=False)
-        st.plotly_chart(polish_chart(fig, height=290, show_legend=False), use_container_width=True,
+        fig.update_layout(margin=dict(l=2, r=2, t=3, b=3), showlegend=False)
+        st.plotly_chart(polish_chart(fig, height=220, show_legend=False), use_container_width=True,
                         config={"displaylogo": False})
     with bottom_mid:
         st.markdown("### Gross profit by product")
-        st.caption("Products ranked by estimated gross profit")
-        profit_products = products.sort_values("gross_profit", ascending=True).tail(6)
+        profit_products = products.sort_values("gross_profit", ascending=True).tail(5)
         fig = px.bar(profit_products, x="gross_profit", y="product", orientation="h", text="gross_profit")
         fig.update_traces(marker_color=CHART_COLORS[1], texttemplate="₹%{x:,.0f}", textposition="outside",
                           cliponaxis=False, hovertemplate="%{y}<br>Gross profit: ₹%{x:,.2f}<extra></extra>")
-        fig.update_layout(margin=dict(l=8, r=35, t=10, b=12))
+        fig.update_layout(margin=dict(l=2, r=28, t=3, b=5))
         fig.update_xaxes(title=None, tickformat="~s", gridcolor=CHART_GRID)
         fig.update_yaxes(title=None, showgrid=False)
-        st.plotly_chart(polish_chart(fig, height=290, show_legend=False), use_container_width=True,
+        st.plotly_chart(polish_chart(fig, height=220, show_legend=False), use_container_width=True,
                         config={"displaylogo": False})
     with bottom_right:
-        st.markdown("### NURTURA Pulse")
-        st.caption("Rule-based signals from the selected records")
-        signals = []
-        if len(daily) >= 14:
-            current = float(daily.tail(7)["revenue"].mean())
-            previous = float(daily.iloc[-14:-7]["revenue"].mean())
-            if previous > 0:
-                change = (current - previous) / previous * 100
-                if change >= 3:
-                    signals.append(("Revenue momentum", f"Recent average daily revenue is up {change:.1f}% versus the previous seven recorded days."))
-                elif change <= -3:
-                    signals.append(("Revenue to review", f"Recent average daily revenue is down {abs(change):.1f}%. Review demand, pricing, and product mix."))
-                else:
-                    signals.append(("Revenue trend", f"Recent average daily revenue is broadly stable ({change:+.1f}%)."))
-        if not products.empty:
-            leader = products.sort_values("revenue", ascending=False).iloc[0]
-            profit_leader = products.sort_values("gross_profit", ascending=False).iloc[0]
-            signals.append(("Revenue leader", f"{leader['product']} leads recorded revenue at {money(leader['revenue'])}."))
-            signals.append(("Profit leader", f"{profit_leader['product']} leads estimated gross profit at {money(profit_leader['gross_profit'])}."))
-        if "stock_on_hand" in df.columns:
-            stock = df.dropna(subset=["stock_on_hand"]).groupby("product")["stock_on_hand"].min()
-            low_stock = stock[stock <= 10]
-            if len(low_stock):
-                signals.append(("Inventory check", f"{len(low_stock)} product(s) have a recorded minimum stock of 10 units or less."))
-        if not signals:
-            signals.append(("Data note", "More daily records are needed to compare recent revenue momentum."))
-        for label, message in signals[:4]:
-            st.markdown(f'<div class="ic-alert"><b>{label}</b><br>{message}</div>', unsafe_allow_html=True)
-        st.caption("Signals are descriptive, not causal predictions. Check the source data before acting.")
+        st.markdown("### Sales mix")
+        # Show the top five products' revenue share as a compact complementary view.
+        mix_products = products.sort_values("revenue", ascending=False).head(5)
+        fig = px.pie(mix_products, names="product", values="revenue", hole=.48,
+                     color_discrete_sequence=CHART_COLORS)
+        fig.update_traces(textposition="inside", textinfo="percent",
+                          hovertemplate="%{label}<br>Revenue: ₹%{value:,.2f}<extra></extra>",
+                          marker=dict(line=dict(color="#0a101b", width=2)))
+        fig.update_layout(margin=dict(l=2, r=2, t=3, b=3), showlegend=True,
+                          legend=dict(font=dict(size=9), orientation="h", yanchor="bottom", y=-.12))
+        st.plotly_chart(polish_chart(fig, height=220, show_legend=True), use_container_width=True,
+                        config={"displaylogo": False})
+
+    # Compact horizontal insight strip; no tall sidebar to create a blank column below charts.
+    st.markdown("### NURTURA Pulse")
+    signals = []
+    if len(daily) >= 14:
+        current = float(daily.tail(7)["revenue"].mean())
+        previous = float(daily.iloc[-14:-7]["revenue"].mean())
+        if previous > 0:
+            change = (current - previous) / previous * 100
+            if change >= 3:
+                signals.append(("Revenue momentum", f"Daily average up {change:.1f}% vs prior 7 days."))
+            elif change <= -3:
+                signals.append(("Revenue to review", f"Daily average down {abs(change):.1f}%; review demand and pricing."))
+            else:
+                signals.append(("Revenue trend", f"Broadly stable ({change:+.1f}%) vs prior 7 days."))
+    if not products.empty:
+        leader = products.sort_values("revenue", ascending=False).iloc[0]
+        profit_leader = products.sort_values("gross_profit", ascending=False).iloc[0]
+        signals.append(("Revenue leader", f"{leader['product']}: {money(leader['revenue'])}."))
+        signals.append(("Profit leader", f"{profit_leader['product']}: {money(profit_leader['gross_profit'])}."))
+    if "stock_on_hand" in df.columns:
+        stock = df.dropna(subset=["stock_on_hand"]).groupby("product")["stock_on_hand"].min()
+        low_stock = stock[stock <= 10]
+        if len(low_stock):
+            signals.append(("Inventory check", f"{len(low_stock)} product(s) have minimum stock ≤ 10."))
+    if not signals:
+        signals.append(("Data note", "Add more daily records to compare revenue momentum."))
+    pulse_cols = st.columns(min(4, len(signals)))
+    for i, (label, message) in enumerate(signals[:4]):
+        with pulse_cols[i]:
+            st.markdown(f'<div class="ic-alert"><b>{label}</b><br><span style="font-size:.88rem">{message}</span></div>',
+                        unsafe_allow_html=True)
+    st.caption("Signals are descriptive, not causal predictions. Check source data before acting.")
 
     st.markdown("### Recent daily performance")
-    recent = daily.tail(10).sort_values("date", ascending=False).copy()
+    recent = daily.tail(7).sort_values("date", ascending=False).copy()
     recent["date"] = recent["date"].dt.strftime("%d %b %Y")
     display_table(recent.rename(columns={
         "date": "Date", "units_sold": "Units sold", "revenue": "Revenue",
         "estimated_cost": "Estimated cost", "gross_profit": "Gross profit",
         "gross_margin_pct": "Gross margin (%)"
-    }), height=330, formats={
+    }), height=230, formats={
         "Units sold": "{:,.0f}", "Revenue": "₹{:,.2f}",
         "Estimated cost": "₹{:,.2f}", "Gross profit": "₹{:,.2f}",
         "Gross margin (%)": "{:.1f}%"
     })
-    st.caption("All measures use the selected date and product filters. Revenue is units × selling price; gross profit excludes operating expenses and taxes.")
+    st.caption("Filtered records only · Revenue = units × selling price · Gross profit excludes operating expenses and taxes.")
 
 
 def main():
