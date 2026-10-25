@@ -256,6 +256,27 @@ h3 {
     min-width: 42px !important;
 }
 
+/* Compact top chrome: bring the workspace up and remove the empty band */
+[data-testid="stHeader"] {
+    height: 2rem !important;
+    min-height: 2rem !important;
+    background: rgba(8,13,22,.96) !important;
+}
+[data-testid="stAppViewBlockContainer"],
+.block-container {
+    padding-top: .35rem !important;
+    margin-top: 0 !important;
+}
+[data-testid="stMainBlockContainer"] {
+    padding-top: .35rem !important;
+}
+[data-testid="stVerticalBlock"] {
+    gap: .65rem !important;
+}
+[data-testid="stDataFrame"], [data-testid="stTable"] {
+    background: #0d1727 !important;
+    color: #e5edf8 !important;
+}
 </style>
     """,
     unsafe_allow_html=True,
