@@ -1043,7 +1043,7 @@ def main():
             st.write(f"Latest recorded daily revenue is **{direction}** than the previous recorded day.")
         st.caption("Forecast limitation: this is a recent-average baseline. It does not account for holidays, promotions, seasonality, stockouts, or external factors unless those patterns are reflected in the recent history.")
 
-    elif page == "Profit Tracker":
+   elif page == "Profit Tracker":
     section_heading(
         "WORKSPACE / PROFIT TRACKER",
         "Daily & monthly profit",
@@ -1052,10 +1052,9 @@ def main():
 
     st.markdown("### Upload operating expenses")
     expense_file = st.file_uploader(
-        "Expense CSV",
+        "Upload expense CSV",
         type=["csv"],
-        key="profit_tracker_expenses",
-        help="Required columns: date, category, amount"
+        key="profit_tracker_expenses"
     )
 
     expenses = pd.DataFrame(
@@ -1069,10 +1068,11 @@ def main():
                 str(c).strip().lower() for c in expenses.columns
             ]
 
-            required = {"date", "category", "amount"}
-            if not required.issubset(expenses.columns):
+            if not {"date", "category", "amount"}.issubset(
+                expenses.columns
+            ):
                 st.error(
-                    "Expense CSV must contain: date, category, amount."
+                    "CSV needs date, category, amount columns."
                 )
                 expenses = pd.DataFrame(
                     columns=["date", "category", "amount"]
@@ -1093,19 +1093,19 @@ def main():
                 expenses = expenses[
                     (expenses["amount"] >= 0)
                     & (expenses["category"] != "")
-                ].copy()
+                ]
 
         except Exception:
-            st.error("Could not read the expense file.")
+            st.error("Could not read the expense CSV.")
             expenses = pd.DataFrame(
                 columns=["date", "category", "amount"]
             )
 
-    sales_daily = daily.copy()
-    sales_daily["date"] = pd.to_datetime(
-        sales_daily["date"], errors="coerce"
+    tracker = daily.copy()
+    tracker["date"] = pd.to_datetime(
+        tracker["date"], errors="coerce"
     )
-    sales_daily = sales_daily.dropna(subset=["date"])
+    tracker = tracker.dropna(subset=["date"])
 
     if expenses.empty:
         expense_daily = pd.DataFrame(
@@ -1118,32 +1118,34 @@ def main():
             .rename(columns={"amount": "operating_expenses"})
         )
 
-    tracker = sales_daily.merge(
+    tracker = tracker.merge(
         expense_daily, on="date", how="left"
     )
     tracker["operating_expenses"] = (
         tracker["operating_expenses"].fillna(0)
     )
-    tracker["net_profit_before_tax"] = (
+    tracker["profit_after_expenses"] = (
         tracker["gross_profit"] - tracker["operating_expenses"]
     )
     tracker["month"] = tracker["date"].dt.to_period("M").astype(str)
 
     st.caption(
-        "Net profit here means gross profit minus uploaded operating "
-        "expenses. It excludes taxes and any costs not supplied."
+        "Profit after expenses = existing gross profit minus "
+        "uploaded operating expenses. Taxes and unprovided costs "
+        "are excluded."
     )
 
-    total_revenue = tracker["revenue"].sum()
-    total_gross_profit = tracker["gross_profit"].sum()
-    total_expenses = tracker["operating_expenses"].sum()
-    total_net_profit = total_gross_profit - total_expenses
-
-    k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Revenue", money(total_revenue))
-    k2.metric("Gross profit", money(total_gross_profit))
-    k3.metric("Operating expenses", money(total_expenses))
-    k4.metric("Profit after listed expenses", money(total_net_profit))
+    a, b, c, d = st.columns(4)
+    a.metric("Revenue", money(tracker["revenue"].sum()))
+    b.metric("Gross profit", money(tracker["gross_profit"].sum()))
+    c.metric(
+        "Operating expenses",
+        money(tracker["operating_expenses"].sum())
+    )
+    d.metric(
+        "Profit after expenses",
+        money(tracker["profit_after_expenses"].sum())
+    )
 
     st.markdown("### Daily profit & loss")
     st.dataframe(
@@ -1151,81 +1153,56 @@ def main():
             [
                 "date", "revenue", "estimated_cost",
                 "gross_profit", "operating_expenses",
-                "net_profit_before_tax"
+                "profit_after_expenses"
             ]
-        ].rename(columns={
-            "date": "Date",
-            "revenue": "Sales",
-            "estimated_cost": "Estimated product cost",
-            "gross_profit": "Gross profit",
-            "operating_expenses": "Operating expenses",
-            "net_profit_before_tax": "Profit after listed expenses"
-        }),
+        ],
         use_container_width=True,
         hide_index=True
     )
 
     st.markdown("### Monthly P&L")
-    monthly = (
-        tracker.groupby("month", as_index=False)
-        .agg(
-            revenue=("revenue", "sum"),
-            estimated_cost=("estimated_cost", "sum"),
-            gross_profit=("gross_profit", "sum"),
-            operating_expenses=("operating_expenses", "sum"),
-            net_profit=("net_profit_before_tax", "sum")
-        )
+    monthly = tracker.groupby("month", as_index=False).agg(
+        revenue=("revenue", "sum"),
+        gross_profit=("gross_profit", "sum"),
+        operating_expenses=("operating_expenses", "sum"),
+        profit_after_expenses=("profit_after_expenses", "sum")
     )
 
-    st.dataframe(
-        monthly.rename(columns={
-            "month": "Month",
-            "revenue": "Revenue",
-            "estimated_cost": "Estimated product cost",
-            "gross_profit": "Gross profit",
-            "operating_expenses": "Operating expenses",
-            "net_profit": "Profit after listed expenses"
-        }),
-        use_container_width=True,
-        hide_index=True
-    )
+    st.dataframe(monthly, use_container_width=True, hide_index=True)
 
     if not monthly.empty:
-        monthly_chart = monthly.melt(
+        chart_data = monthly.melt(
             id_vars="month",
-            value_vars=["revenue", "gross_profit", "net_profit"],
+            value_vars=["revenue", "gross_profit", "profit_after_expenses"],
             var_name="metric",
             value_name="amount"
         )
-        fig_monthly = px.line(
-            monthly_chart,
+        fig = px.line(
+            chart_data,
             x="month",
             y="amount",
             color="metric",
             markers=True,
             title="Monthly financial performance"
         )
-        st.plotly_chart(fig_monthly, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("### Expense breakdown")
     if not expenses.empty:
-        expense_categories = (
-            expenses.groupby("category", as_index=False)["amount"]
-            .sum()
-        )
-        fig_expenses = px.pie(
-            expense_categories,
+        category_totals = expenses.groupby(
+            "category", as_index=False
+        )["amount"].sum()
+
+        pie = px.pie(
+            category_totals,
             names="category",
             values="amount",
-            hole=0.48,
-            title="Operating expenses by category"
+            hole=0.45,
+            title="Expenses by category"
         )
-        st.plotly_chart(fig_expenses, use_container_width=True)
+        st.plotly_chart(pie, use_container_width=True)
     else:
-        st.info(
-            "Upload an expense CSV to display the expense pie chart "
-            "and calculate profit after operating expenses."
-        )
+        st.info("Upload an expense CSV to display the expense pie chart.")
     elif page == "Reports":
         section_heading("WORKSPACE / REPORTS", "Reports & exports", "Generate a business report from the current filtered data.")
         revenue = filtered["revenue"].sum()
