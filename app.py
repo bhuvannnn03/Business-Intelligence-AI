@@ -1043,8 +1043,8 @@ def main():
             st.write(f"Latest recorded daily revenue is **{direction}** than the previous recorded day.")
         st.caption("Forecast limitation: this is a recent-average baseline. It does not account for holidays, promotions, seasonality, stockouts, or external factors unless those patterns are reflected in the recent history.")
 
-   elif page == "Profit Tracker":
-    section_heading(
+    elif page == "Profit Tracker":
+        section_heading(
         "WORKSPACE / PROFIT TRACKER",
         "Daily & monthly profit",
         "Track sales, costs, and operating expenses."
