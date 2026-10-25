@@ -879,9 +879,7 @@ def main():
         st.stop()
     for note in validation_notes:
         st.warning(note)
-    if uploaded is None and use_demo:
-        st.info("Demo mode: the current figures are synthetic examples, not a real business's results.")
-
+   
     daily = daily_summary(df)
     products = product_summary(df)
     forecast, avg_units, avg_revenue = forecast_next_week(daily)
