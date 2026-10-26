@@ -88,32 +88,32 @@ st.markdown(
 [data-testid="stSidebar"] div[role="radiogroup"] > label [data-testid="stMarkdownContainer"] p { font-size: 21px !important; }
 [data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child { min-width: 42px !important; }
 
-/* Keep Streamlit's header available so the sidebar can always be reopened.
-   Make it compact and transparent rather than hiding it entirely. */
+/* Blend Streamlit's top toolbar into the app background without hiding
+   its sidebar-collapse/reopen control. */
 [data-testid="stHeader"] {
     display: flex !important;
     visibility: visible !important;
     height: 2.35rem !important;
     min-height: 2.35rem !important;
-    background: rgba(8, 13, 22, 0.96) !important;
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 999990 !important;
+    background: #0a101b !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
 }
-[data-testid="stHeader"] button,
-[data-testid="stHeader"] [data-testid="stSidebarCollapsedControl"],
-[data-testid="stSidebarCollapsedControl"] {
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-}
+[data-testid="stToolbar"] { visibility: visible !important; }
 [data-testid="stAppViewContainer"] > .main,
 [data-testid="stMain"],
 [data-testid="stMainBlockContainer"],
 [data-testid="stAppViewBlockContainer"],
 .block-container {
-    padding-top: 0.15rem !important;
+    padding-top: 0 !important;
     margin-top: 0 !important;
+}
+/* Move the brand closer to the top while keeping the navigation toggle usable. */
+[data-testid="stSidebar"] > div:first-child { padding-top: .25rem !important; }
+[data-testid="stSidebar"] .ic-brand {
+    margin-top: -.55rem !important;
+    padding-top: .25rem !important;
+    padding-bottom: 14px !important;
 }
 .block-container {
     max-width: 1800px !important;
@@ -144,6 +144,10 @@ h3 { font-size: 1.12rem !important; }
 .ic-panel { padding: 13px 16px !important; margin-bottom: 5px !important; }
 .ic-alert { padding: 10px 12px !important; margin: 4px 0 !important; }
 h3 { font-size: 27px !important; }
+/* Final layout guard: toolbar and content share one continuous dark surface. */
+[data-testid="stHeader"], [data-testid="stToolbar"] { background-color: #0a101b !important; }
+[data-testid="stAppViewContainer"], [data-testid="stMain"] { background: transparent !important; }
+.block-container { padding-top: .15rem !important; }
 </style>
     """,
     unsafe_allow_html=True,
