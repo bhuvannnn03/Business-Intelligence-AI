@@ -593,167 +593,198 @@ def forecast_next_week(daily, periods=7):
     }), avg_units, avg_revenue
 
 
-def build_pdf_report(df, daily, forecast, accuracy, business_name):
+def build_pdf_report(df, daily, forecast, accuracy, business_name,
+                     audience="Business owner", industry="General retail",
+                     design_style="NURTURA navy & teal"):
+    """Build a structured six-page business report using only available data."""
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer, pagesize=landscape(A4), rightMargin=34, leftMargin=34,
-        topMargin=32, bottomMargin=34,
-    )
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=38, leftMargin=38,
+                            topMargin=42, bottomMargin=42, title=f"{business_name} Business Report")
+    navy = colors.HexColor("#14263D")
+    teal = colors.HexColor("#16A6A1")
+    pale = colors.HexColor("#F3F6FA")
+    charcoal = colors.HexColor("#263445")
+    muted = colors.HexColor("#627184")
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name="ICBody", parent=styles["BodyText"], fontName="Helvetica", fontSize=8.5, leading=12, textColor=colors.HexColor("#334155"), alignment=TA_LEFT))
-    styles.add(ParagraphStyle(name="ICSmall", parent=styles["BodyText"], fontSize=7, leading=9, textColor=colors.HexColor("#64748b")))
+    styles.add(ParagraphStyle(name="NRBody", parent=styles["BodyText"], fontName="Helvetica",
+        fontSize=9.3, leading=13, textColor=charcoal, spaceAfter=6))
+    styles.add(ParagraphStyle(name="NRSmall", parent=styles["BodyText"], fontName="Helvetica",
+        fontSize=7.6, leading=10, textColor=muted, spaceAfter=4))
+    styles.add(ParagraphStyle(name="NRH1", parent=styles["Heading1"], fontName="Helvetica-Bold",
+        fontSize=23, leading=27, textColor=navy, spaceAfter=9))
+    styles.add(ParagraphStyle(name="NRH2", parent=styles["Heading2"], fontName="Helvetica-Bold",
+        fontSize=14, leading=17, textColor=navy, spaceBefore=7, spaceAfter=7))
+    styles.add(ParagraphStyle(name="NREyebrow", parent=styles["BodyText"], fontName="Helvetica-Bold",
+        fontSize=8, leading=10, textColor=teal, spaceAfter=7))
     story = []
     total_revenue = float(df["revenue"].sum())
+    total_cost = float(df["estimated_cost"].sum())
     total_profit = float(df["gross_profit"].sum())
     total_units = float(df["units_sold"].sum())
-    total_cost = float(df["estimated_cost"].sum())
-    margin = total_profit / total_revenue * 100 if total_revenue else 0
-    start_date, end_date = df["date"].min().strftime("%d %b %Y"), df["date"].max().strftime("%d %b %Y")
+    margin = total_profit / total_revenue * 100 if total_revenue else 0.0
+    start_date = df["date"].min().strftime("%d %b %Y")
+    end_date = df["date"].max().strftime("%d %b %Y")
+    product_df = product_summary(df)
+    days = int(df["date"].nunique())
+    daily_avg = total_revenue / days if days else 0
+    previous_note = "A previous-period comparison was not calculated for this report."
+    if len(daily) >= 14:
+        recent7 = float(daily.tail(7)["revenue"].mean())
+        prior7 = float(daily.iloc[-14:-7]["revenue"].mean())
+        if prior7:
+            change = (recent7-prior7)/prior7*100
+            previous_note = f"Average daily revenue over the latest 7 recorded days changed {change:+.1f}% versus the preceding 7 recorded days. This is descriptive and does not establish the cause."
+    top_rev = product_df.iloc[0] if not product_df.empty else None
+    top_profit = product_df.sort_values("gross_profit", ascending=False).iloc[0] if not product_df.empty else None
+    low_profit = product_df.sort_values("gross_profit", ascending=True).iloc[0] if not product_df.empty else None
 
-    story.append(Paragraph("NURTURA | BUSINESS INTELLIGENCE REPORT", styles["Title"]))
-    story.append(Spacer(1, 5))
-    story.append(Paragraph(f"{business_name} &nbsp; • &nbsp; {start_date} – {end_date}", styles["ICBody"]))
-    story.append(Spacer(1, 16))
-    story.append(Paragraph("Executive summary", styles["Heading2"]))
-    story.append(Paragraph(
-        f"Across {len(df):,} valid records, the dataset shows {money(total_revenue)} in recorded revenue, "
-        f"{money(total_profit)} in estimated gross profit, and {number(total_units)} units sold. "
-        f"The calculated gross margin is {margin:.1f}%. These are calculated from the uploaded data and are not audited financial statements.",
-        styles["ICBody"],
-    ))
-    story.append(Spacer(1, 12))
-    kpis = [
-        ["Revenue", "Estimated cost", "Gross profit", "Gross margin", "Units sold"],
-        [money(total_revenue), money(total_cost), money(total_profit), f"{margin:.1f}%", number(total_units)],
-    ]
-    kpi_table = Table(kpis, colWidths=[145] * 5)
-    kpi_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#172b4d")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("BACKGROUND", (0, 1), (-1, 1), colors.HexColor("#eef4ff")),
-        ("TEXTCOLOR", (0, 1), (-1, 1), colors.HexColor("#172b4d")),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTNAME", (0, 1), (-1, 1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ("GRID", (0, 0), (-1, -1), .4, colors.HexColor("#cbd5e1")),
-        ("PADDING", (0, 0), (-1, -1), 9),
-    ]))
-    story.append(kpi_table)
-    story.append(Spacer(1, 18))
+    def make_table(rows, widths, font=8):
+        t = Table(rows, colWidths=widths, repeatRows=1, hAlign="LEFT")
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0,0), (-1,0), navy), ("TEXTCOLOR", (0,0), (-1,0), colors.white),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTNAME", (0,1), (-1,-1), "Helvetica"), ("FONTSIZE", (0,0), (-1,-1), font),
+            ("TEXTCOLOR", (0,1), (-1,-1), charcoal), ("ROWBACKGROUNDS", (0,1), (-1,-1), [colors.white, pale]),
+            ("GRID", (0,0), (-1,-1), .35, colors.HexColor("#D6DEE8")),
+            ("VALIGN", (0,0), (-1,-1), "TOP"), ("LEFTPADDING", (0,0), (-1,-1), 7),
+            ("RIGHTPADDING", (0,0), (-1,-1), 7), ("TOPPADDING", (0,0), (-1,-1), 7),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 7),
+        ]))
+        return t
 
-    # Vector chart of recent daily revenue
-    recent = daily.tail(30)
+    def header(kicker, title, subtitle):
+        story.append(Paragraph("NURTURA  /  BUSINESS INTELLIGENCE", styles["NREyebrow"]))
+        story.append(Paragraph(title, styles["NRH1"]))
+        story.append(Paragraph(subtitle, styles["NRBody"]))
+        story.append(Paragraph(f"{business_name}  •  {start_date} – {end_date}  •  Prepared for: {audience}  •  Industry: {industry}", styles["NRSmall"]))
+        story.append(Spacer(1, 8))
+
+    # PAGE 1 — Executive Summary
+    header("EXECUTIVE SUMMARY", "Executive Summary", "A decision-focused snapshot of business performance and the priorities supported by the available data.")
+    kpis = [["REVENUE", "ESTIMATED COST", "GROSS PROFIT", "GROSS MARGIN"],
+            [money(total_revenue), money(total_cost), money(total_profit), f"{margin:.1f}%"]]
+    kt = Table(kpis, colWidths=[129]*4)
+    kt.setStyle(TableStyle([("BACKGROUND",(0,0),(-1,0),navy),("TEXTCOLOR",(0,0),(-1,0),colors.white),
+        ("BACKGROUND",(0,1),(-1,1),pale),("TEXTCOLOR",(0,1),(-1,1),navy),
+        ("FONTNAME",(0,0),(-1,0),"Helvetica-Bold"),("FONTNAME",(0,1),(-1,1),"Helvetica-Bold"),
+        ("FONTSIZE",(0,0),(-1,-1),9),("BOX",(0,0),(-1,-1),.5,teal),
+        ("INNERGRID",(0,0),(-1,-1),.35,colors.white),("PADDING",(0,0),(-1,-1),10)]))
+    story.append(kt); story.append(Spacer(1,12))
+    story.append(Paragraph("Overall assessment", styles["NRH2"]))
+    story.append(Paragraph(f"Across {len(df):,} valid sales records covering {days:,} recorded days and {df['product'].nunique():,} products, recorded revenue is {money(total_revenue)} and estimated gross profit is {money(total_profit)}. Gross margin is {margin:.1f}%. Average revenue per recorded day is {money(daily_avg)}. These are calculations from the supplied data, not audited financial statements.", styles["NRBody"]))
+    story.append(Paragraph("Three major findings", styles["NRH2"]))
+    findings = [f"Revenue leader: {top_rev['product']} ({money(top_rev['revenue'])} revenue)." if top_rev is not None else "Product-level findings are unavailable.",
+                f"Gross-profit leader: {top_profit['product']} ({money(top_profit['gross_profit'])} estimated gross profit)." if top_profit is not None else "Gross-profit ranking is unavailable.", previous_note]
+    for x in findings: story.append(Paragraph("•  "+x, styles["NRBody"]))
+    story.append(Paragraph("Three recommended actions", styles["NRH2"]))
+    actions = ["Review the leading products' stock availability before making replenishment decisions.",
+               "Investigate product-level margin and cost differences before changing prices or promotions.",
+               "Check data completeness and compare results across consistent reporting periods before committing budget."]
+    for x in actions: story.append(Paragraph("•  "+x, styles["NRBody"]))
+    story.append(Paragraph("Assessment is limited to the fields supplied. No cause is inferred from a change in sales alone.", styles["NRSmall"]))
+
+    # PAGE 2 — Business performance
+    story.append(PageBreak()); header("PERFORMANCE", "Business Performance", "Financial totals, daily trends and comparison context.")
+    story.append(make_table([["Metric","Value","Interpretation"],
+        ["Revenue",money(total_revenue),"Recorded units sold × selling price."],
+        ["Estimated product cost",money(total_cost),"Units sold × unit cost; excludes unprovided expenses."],
+        ["Estimated gross profit",money(total_profit),"Revenue less estimated product cost."],
+        ["Gross margin",f"{margin:.1f}%","Gross profit as a share of revenue."],
+        ["Units sold",number(total_units),"Total units across valid records."],
+        ["Average revenue / recorded day",money(daily_avg),"Total revenue divided by distinct recorded dates."]], [150,130,238]))
+    story.append(Spacer(1,10)); story.append(Paragraph("Recent daily revenue",styles["NRH2"]))
+    recent = daily.tail(18)
     if not recent.empty:
-        story.append(Paragraph("Daily revenue — most recent 30 recorded days", styles["Heading2"]))
-        drawing = Drawing(720, 190)
-        chart = VerticalBarChart()
-        chart.x = 42
-        chart.y = 30
-        chart.height = 125
-        chart.width = 650
-        chart.data = [tuple(float(x) for x in recent["revenue"].tolist())]
-        chart.categoryAxis.categoryNames = [d.strftime("%d %b") for d in recent["date"]]
-        chart.categoryAxis.labels.angle = 45
-        chart.categoryAxis.labels.fontSize = 6
-        chart.valueAxis.labels.fontSize = 7
-        chart.valueAxis.valueMin = 0
-        chart.valueAxis.valueMax = max(1, float(recent["revenue"].max()) * 1.15)
-        chart.valueAxis.valueStep = max(1, chart.valueAxis.valueMax / 4)
-        chart.bars[0].fillColor = colors.HexColor("#3478f6")
-        chart.strokeColor = colors.HexColor("#cbd5e1")
-        drawing.add(chart)
-        story.append(drawing)
-        story.append(Spacer(1, 10))
+        drawing=Drawing(500,180); chart=VerticalBarChart(); chart.x=42; chart.y=28; chart.width=445; chart.height=125
+        chart.data=[tuple(float(v) for v in recent["revenue"].tolist())]
+        chart.categoryAxis.categoryNames=[d.strftime("%d %b") for d in recent["date"]]
+        chart.categoryAxis.labels.angle=35; chart.categoryAxis.labels.fontSize=6
+        chart.valueAxis.labels.fontSize=7; chart.valueAxis.valueMin=0
+        chart.valueAxis.valueMax=max(1,float(recent["revenue"].max())*1.12); chart.valueAxis.valueStep=max(1,chart.valueAxis.valueMax/4)
+        chart.bars[0].fillColor=teal; drawing.add(chart); story.append(drawing)
+    story.append(Paragraph(previous_note, styles["NRBody"]))
 
-    products = product_summary(df)
-    story.append(Paragraph("Product performance", styles["Heading2"]))
-    product_data = [["Product", "Units sold", "Revenue", "Estimated cost", "Gross profit", "Margin"]]
-    for _, row in products.head(15).iterrows():
-        product_data.append([
-            str(row["product"])[:38], number(row["units_sold"]), money(row["revenue"]),
-            money(row["estimated_cost"]), money(row["gross_profit"]),
-            f"{row['gross_margin_pct']:.1f}%" if pd.notna(row["gross_margin_pct"]) else "—",
-        ])
-    ptable = Table(product_data, repeatRows=1, colWidths=[180, 70, 100, 100, 100, 65])
-    ptable.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#172b4d")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("GRID", (0, 0), (-1, -1), .35, colors.HexColor("#cbd5e1")),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f8fc")]),
-        ("FONTSIZE", (0, 0), (-1, -1), 7.5),
-        ("PADDING", (0, 0), (-1, -1), 5),
-    ]))
-    story.append(ptable)
-    story.append(Spacer(1, 15))
+    # PAGE 3 — Sales and product analysis
+    story.append(PageBreak()); header("SALES & PRODUCTS", "Sales and Product Analysis", "Product contribution, profitability and concentration signals.")
+    story.append(Paragraph("Top products by revenue",styles["NRH2"]))
+    rows=[["Product","Units","Revenue","Gross profit","Margin"]]
+    for _,r in product_df.head(12).iterrows(): rows.append([str(r["product"])[:32],number(r["units_sold"]),money(r["revenue"]),money(r["gross_profit"]),f"{r['gross_margin_pct']:.1f}%" if pd.notna(r["gross_margin_pct"]) else "—"])
+    story.append(make_table(rows,[145,60,100,110,70],7.4)); story.append(Spacer(1,10))
+    top5_share=(float(product_df.head(5)["revenue"].sum())/total_revenue*100) if total_revenue else 0
+    story.append(Paragraph(f"The top five products account for {top5_share:.1f}% of recorded revenue. A high concentration may make performance more dependent on a small group of products; it does not by itself indicate a problem.",styles["NRBody"]))
+    if low_profit is not None:
+        story.append(Paragraph(f"Product to review: {low_profit['product']} has the lowest estimated gross profit in the current ranking ({money(low_profit['gross_profit'])}). Review its sales volume, unit economics and data quality before making a product decision.",styles["NRBody"]))
+    story.append(Paragraph("Category analysis is omitted when a category field is not available in the supplied dataset.",styles["NRSmall"]))
 
-    if not forecast.empty:
-        story.append(Paragraph("Next seven days — baseline forecast", styles["Heading2"]))
-        story.append(Paragraph(
-            "This forecast repeats the recent average daily units and revenue. It is a simple baseline, not a guarantee and not a trained machine-learning prediction.", styles["ICBody"]
-        ))
-        story.append(Spacer(1, 6))
-        fdata = [["Date", "Forecast units", "Forecast revenue"]]
-        for _, row in forecast.iterrows():
-            fdata.append([row["Date"].strftime("%d %b %Y"), number(row["Forecast units"], 1), money(row["Forecast revenue"])])
-        ftable = Table(fdata, repeatRows=1, colWidths=[170, 170, 170])
-        ftable.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#172b4d")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("GRID", (0, 0), (-1, -1), .35, colors.HexColor("#cbd5e1")),
-            ("FONTSIZE", (0, 0), (-1, -1), 8),
-            ("PADDING", (0, 0), (-1, -1), 6),
-        ]))
-        story.append(ftable)
-        story.append(Spacer(1, 12))
-
-    if accuracy is not None:
-        story.append(Paragraph("Historical forecast evaluation", styles["Heading2"]))
-        story.append(Paragraph("Lower mean absolute error (MAE) indicates a smaller average absolute error on the tested historical period. This comparison alone does not establish which method will perform best in the future.", styles["ICBody"]))
-        story.append(Spacer(1, 6))
-        adata = [["Method", "Mean absolute error (units)"]]
-        for _, row in accuracy.iterrows():
-            adata.append([row["Forecast method"], f"{row['Mean absolute error (units)']:.2f}"])
-        atable = Table(adata, colWidths=[280, 220])
-        atable.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#172b4d")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("GRID", (0, 0), (-1, -1), .35, colors.HexColor("#cbd5e1")),
-            ("FONTSIZE", (0, 0), (-1, -1), 8),
-            ("PADDING", (0, 0), (-1, -1), 6),
-        ]))
-        story.append(atable)
-
+    # PAGE 4 — Inventory and operations
+    story.append(PageBreak()); header("OPERATIONS", "Inventory and Operations", "Stock status and operational risks, where inventory fields are available.")
     if "stock_on_hand" in df.columns:
-        stock = df.dropna(subset=["stock_on_hand"])
-        if not stock.empty:
-            story.append(Spacer(1, 14))
-            story.append(Paragraph("Inventory review", styles["Heading2"]))
-            inv = stock.groupby("product", as_index=False).agg(stock_on_hand=("stock_on_hand", "min"))
-            inv["status"] = inv["stock_on_hand"].apply(lambda x: "Out of stock" if x <= 0 else "Low stock" if x <= 10 else "In stock")
-            low = inv[inv["status"].isin(["Out of stock", "Low stock"])].sort_values("stock_on_hand")
-            if low.empty:
-                story.append(Paragraph("No product falls at or below the low-stock threshold of 10 units in the supplied records.", styles["ICBody"]))
-            else:
-                idata = [["Product", "Lowest recorded stock", "Status"]]
-                for _, row in low.head(15).iterrows():
-                    idata.append([str(row["product"])[:38], number(row["stock_on_hand"]), row["status"]])
-                itable = Table(idata, repeatRows=1, colWidths=[250, 160, 180])
-                itable.setStyle(TableStyle([
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#172b4d")),
-                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                    ("GRID", (0, 0), (-1, -1), .35, colors.HexColor("#cbd5e1")),
-                    ("FONTSIZE", (0, 0), (-1, -1), 8),
-                    ("PADDING", (0, 0), (-1, -1), 6),
-                ]))
-                story.append(itable)
+        stock=df.dropna(subset=["stock_on_hand"]).groupby("product",as_index=False).agg(stock_on_hand=("stock_on_hand","min"),units_sold=("units_sold","sum"))
+        stock["status"]=stock["stock_on_hand"].apply(lambda v:"Out of stock" if v<=0 else "Low stock" if v<=10 else "In stock")
+        low=stock[stock["status"].isin(["Out of stock","Low stock"])].sort_values("stock_on_hand")
+        story.append(Paragraph(f"Stock records are available for {len(stock)} products. {len(low)} product(s) meet the illustrative low-stock threshold of 10 units or less.",styles["NRBody"]))
+        rows=[["Product","Lowest recorded stock","Units sold in filtered data","Status"]]
+        for _,r in stock.sort_values("stock_on_hand").head(14).iterrows(): rows.append([str(r["product"])[:30],number(r["stock_on_hand"]),number(r["units_sold"]),r["status"]])
+        story.append(make_table(rows,[160,110,130,85],7.6))
+        story.append(Spacer(1,10)); story.append(Paragraph("Reorder quantities and stockout dates are not calculated here because supplier lead times, target safety stock and confirmed current stock semantics may be unavailable. Treat the table as a review queue, not a live inventory ledger.",styles["NRBody"]))
+    else:
+        story.append(Paragraph("Inventory analysis is not available because the uploaded dataset does not include stock_on_hand. Upload current stock counts to enable low-stock review. Inventory value, stockout risk and reorder quantity require additional reliable inputs.",styles["NRBody"]))
+    story.append(Paragraph("Operational checks",styles["NRH2"]))
+    for x in ["Verify stock counts before purchasing.","Review slow-moving products using recent sales history where enough history exists.","Add supplier lead time and minimum order quantity before using a reorder plan."]:
+        story.append(Paragraph("•  "+x,styles["NRBody"]))
 
-    story.append(Spacer(1, 20))
-    story.append(Paragraph("Methodology and limitations", styles["Heading2"]))
-    story.append(Paragraph(
-        "Revenue is calculated as units sold × selling price. Estimated cost is units sold × unit cost. Gross profit is revenue minus estimated cost; it excludes operating expenses, taxes, returns not represented in the data, and other accounting adjustments. Stock status uses the lowest supplied stock_on_hand value per product and a configurable illustrative threshold of 10. Verify all inputs before using this report for operational or financial decisions.",
-        styles["ICSmall"],
-    ))
-    doc.build(story)
+    # PAGE 5 — Forecasts and insights
+    story.append(PageBreak()); header("FORECAST & INSIGHTS", "Forecasts and Business Insights", "Baseline estimates and the assumptions that should guide interpretation.")
+    if forecast is not None and not forecast.empty:
+        forecast_revenue=float(forecast["Forecast revenue"].sum()); forecast_units=float(forecast["Forecast units"].sum())
+        story.append(make_table([["Forecast metric","Baseline estimate","Method"],
+            ["Next 7 days revenue",money(forecast_revenue),"Repeats recent average daily revenue."],
+            ["Next 7 days units",number(forecast_units,1),"Repeats recent average daily units."]],[155,130,245]))
+        story.append(Spacer(1,12)); story.append(Paragraph("Forecast profile",styles["NRH2"]))
+        story.append(Paragraph("The baseline is a simple reference scenario, not a trained machine-learning model or a guarantee. It does not automatically account for promotions, seasonality, price changes, stock constraints or external events.",styles["NRBody"]))
+        frows=[["Date","Forecast units","Forecast revenue"]]
+        for _,r in forecast.iterrows(): frows.append([r["Date"].strftime("%d %b %Y"),number(r["Forecast units"],1),money(r["Forecast revenue"])])
+        story.append(make_table(frows,[150,130,150],7.7))
+    else:
+        story.append(Paragraph("A forecast could not be produced from the current data. Supply valid daily sales history and review the validation messages.",styles["NRBody"]))
+    story.append(Spacer(1,10)); story.append(Paragraph("Historical forecast evaluation",styles["NRH2"]))
+    if accuracy is not None and not accuracy.empty:
+        rows=[["Method","Mean absolute error (units)"]]
+        for _,r in accuracy.iterrows(): rows.append([str(r["Forecast method"]),f"{float(r['Mean absolute error (units)']):.2f}"])
+        story.append(make_table(rows,[260,190]))
+        story.append(Paragraph("Lower MAE means lower average absolute error on the held-out historical period; it does not guarantee future performance.",styles["NRSmall"]))
+    else: story.append(Paragraph("There is not enough daily history to evaluate forecast accuracy reliably.",styles["NRBody"]))
+
+    # PAGE 6 — Recommendations and action plan
+    story.append(PageBreak()); header("ACTION PLAN", "Recommendations and Action Plan", "Prioritized next steps linked to the available evidence.")
+    recommendations=[
+        ["Priority","Recommended action","Evidence / rationale","Suggested timing"],
+        ["High","Validate source data and reporting dates","All conclusions depend on complete, consistent inputs.","Before acting"],
+        ["High","Review leading products' stock availability","Top revenue products may warrant closer stock monitoring.","This week"],
+        ["High","Review product-level gross margin","Revenue alone does not indicate profitability.","This week"],
+        ["Medium","Compare performance across equivalent periods","Helps distinguish a sustained change from normal variation.","Monthly"],
+        ["Medium","Add current stock and supplier lead times","Enables better-supported reorder and stockout estimates.","Before inventory planning"],
+    ]
+    story.append(make_table(recommendations,[55,150,205,90],7.2)); story.append(Spacer(1,12))
+    story.append(Paragraph("Risks and limitations",styles["NRH2"]))
+    limitations=["Revenue = units sold × selling price. Estimated cost = units sold × unit cost. Gross profit = revenue − estimated product cost.",
+      "Gross profit excludes operating expenses, taxes, interest, returns not represented in the data and other accounting adjustments.",
+      "Average order value is not reported unless reliable order-level identifiers and order totals are available.",
+      "Forecasts are simple baselines; they are not guarantees. Scenario ranges are omitted unless supportable assumptions are provided.",
+      "Inventory and category insights are limited to the columns supplied. No missing business facts have been invented."]
+    for x in limitations: story.append(Paragraph("•  "+x,styles["NRSmall"]))
+    story.append(Spacer(1,8)); story.append(Paragraph("Closing assessment",styles["NRH2"]))
+    story.append(Paragraph(f"The selected dataset records {money(total_revenue)} revenue and {money(total_profit)} estimated gross profit at a {margin:.1f}% gross margin. Prioritize validating the underlying data, reviewing product profitability and confirming inventory availability before making material operating or purchasing decisions.",styles["NRBody"]))
+    story.append(Spacer(1,8)); story.append(Paragraph(f"Design: {design_style}. Report prepared for {audience}; industry context: {industry}. Currency is shown in INR (₹) using the current prototype formatting. Verify figures before external distribution.",styles["NRSmall"]))
+
+    def footer(canvas, document):
+        canvas.saveState(); w,h=A4
+        canvas.setStrokeColor(colors.HexColor("#D6DEE8")); canvas.line(38,28,w-38,28)
+        canvas.setFont("Helvetica",7); canvas.setFillColor(muted)
+        canvas.drawString(38,16,f"NURTURA  •  {business_name}  •  {start_date} – {end_date}")
+        canvas.drawRightString(w-38,16,f"Page {document.page} of 6")
+        canvas.restoreState()
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
     buffer.seek(0)
     return buffer.getvalue()
 
@@ -1601,11 +1632,20 @@ def main():
         c.metric("Report gross margin", f"{margin:.1f}%")
         business_name = st.text_input("Business / report name", value=st.session_state.get("business_name", "My Business"))
         st.session_state["business_name"] = business_name.strip() or "My Business"
+        pref1, pref2 = st.columns(2)
+        with pref1:
+            report_audience = st.selectbox("Report audience", ["Business owner", "Management team", "Investor / lender discussion", "Operations manager"])
+            report_industry = st.selectbox("Business / industry", ["General retail", "Food & beverage", "Fashion & apparel", "Consumer goods", "Wholesale / distribution", "Other"])
+        with pref2:
+            report_design = st.selectbox("Design style", ["NURTURA navy & teal", "Clean corporate", "Minimal print-friendly"])
+            st.selectbox("Output format", ["Professional 6-page PDF", "PDF + CSV exports"], key="report_output_preference")
+        st.caption("The report uses the current filtered data. Unsupported metrics are labelled unavailable rather than invented.")
         st.markdown("### Report preview")
         fig = line_figure(daily, "date", "revenue", height=330)
         st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
         display_table(products.head(10), height=340, formats={"revenue": "₹{:,.2f}", "estimated_cost": "₹{:,.2f}", "gross_profit": "₹{:,.2f}", "gross_margin_pct": "{:.1f}%", "units_sold": "{:,.0f}"})
-        pdf_bytes = build_pdf_report(filtered, daily, forecast, accuracy, st.session_state["business_name"])
+        pdf_bytes = build_pdf_report(filtered, daily, forecast, accuracy, st.session_state["business_name"],
+                                     report_audience, report_industry, report_design)
         st.download_button(
             "Download professional PDF report",
             data=pdf_bytes,
@@ -1613,7 +1653,7 @@ def main():
             mime="application/pdf",
             key="download_full_pdf_report",
         )
-        st.caption("The report contains a revenue chart, executive summary, product table, baseline forecast, and forecast evaluation when enough history is available.")
+        st.caption("The PDF is structured as six pages: Executive Summary; Business Performance; Sales & Product Analysis; Inventory & Operations; Forecasts & Insights; Recommendations & Action Plan. Sections disclose unavailable data and forecast limitations.")
         st.download_button("Download filtered sales records (CSV)", data=safe_csv_bytes(filtered), file_name=f"{safe_filename(st.session_state['business_name'].strip().lower())}_filtered_records.csv", mime="text/csv", key="report_filtered_csv")
         st.download_button("Download product performance (CSV)", data=safe_csv_bytes(products), file_name=f"{safe_filename(st.session_state['business_name'].strip().lower())}_product_performance.csv", mime="text/csv", key="report_products_csv")
 
