@@ -312,12 +312,12 @@ def safe_filename(label):
     return cleaned or "business"
 NAV_ITEMS = [
     "Home",
-    "Summary",
     "Sales Analytics",
     "Products & Profitability",
     "Inventory",
     "Forecast & Insights",
     "Profit Tracker",
+    "Summary",
     "Reports",
     "Team & Settings",
     "Data Explorer",
