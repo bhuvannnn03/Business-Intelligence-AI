@@ -310,6 +310,39 @@ def safe_filename(label):
     """Keep download names simple and avoid path/control characters."""
     cleaned = re.sub(r"[^A-Za-z0-9_-]+", "_", str(label)).strip("_-")[:60]
     return cleaned or "business"
+
+
+def read_limited_csv(uploaded, *, max_bytes=MAX_UPLOAD_BYTES,
+                     max_rows=MAX_UPLOAD_ROWS, max_columns=MAX_UPLOAD_COLUMNS):
+    """Read a user CSV with consistent size, shape, and header checks.
+
+    UploadedFile.size is checked before parsing; row/column limits are enforced
+    while reading. Header normalization collisions are rejected, not guessed.
+    """
+    if uploaded is None:
+        raise ValueError("No file was supplied.")
+    if getattr(uploaded, "size", 0) > max_bytes:
+        raise ValueError("The CSV exceeds the 10 MiB upload limit.")
+    uploaded.seek(0)
+    frame = pd.read_csv(uploaded, nrows=max_rows + 1, low_memory=False)
+    if len(frame) > max_rows:
+        raise ValueError("The CSV exceeds the 100,000-row limit.")
+    if len(frame.columns) > max_columns:
+        raise ValueError("The CSV exceeds the 50-column limit.")
+    normalized = [re.sub(r"\s+", "_", str(c).strip().lower())[:100] for c in frame.columns]
+    if any(not c for c in normalized):
+        raise ValueError("The CSV contains an empty column name.")
+    if len(set(normalized)) != len(normalized):
+        raise ValueError("The CSV contains duplicate column names after normalization.")
+    frame.columns = normalized
+    return frame
+
+
+def clean_text_column(series, max_length=120):
+    """Bound untrusted labels and remove control characters before display/export."""
+    return (series.fillna("").astype(str)
+            .str.replace(r"[\x00-\x1f\x7f]", " ", regex=True)
+            .str.strip().str.slice(0, max_length))
 NAV_ITEMS = [
     "Home",
     "Sales Analytics",
@@ -1404,10 +1437,7 @@ def main():
     
         if expense_file is not None:
             try:
-                expenses = pd.read_csv(expense_file)
-                expenses.columns = [
-                    str(c).strip().lower() for c in expenses.columns
-                ]
+                expenses = read_limited_csv(expense_file)
     
                 if not {"date", "category", "amount"}.issubset(
                     expenses.columns
@@ -1425,19 +1455,16 @@ def main():
                     expenses["amount"] = pd.to_numeric(
                         expenses["amount"], errors="coerce"
                     )
-                    expenses["category"] = (
-                        expenses["category"].astype(str).str.strip()
-                    )
-                    expenses = expenses.dropna(
-                        subset=["date", "amount"]
-                    )
-                    expenses = expenses[
-                        (expenses["amount"] >= 0)
-                        & (expenses["category"] != "")
-                    ]
+                    expenses["category"] = clean_text_column(expenses["category"], 80)
+                    expenses["amount"] = expenses["amount"].where(np.isfinite(expenses["amount"]), np.nan)
+                    expenses = expenses.dropna(subset=["date", "amount"])
+                    expenses = expenses[(expenses["amount"] >= 0) & (expenses["category"] != "")]
     
+            except ValueError as exc:
+                st.error(f"Expense CSV rejected: {exc}")
+                expenses = pd.DataFrame(columns=["date", "category", "amount"])
             except Exception:
-                st.error("Could not read the expense CSV.")
+                st.error("Could not safely read the expense CSV. Check its format and required columns.")
                 expenses = pd.DataFrame(
                     columns=["date", "category", "amount"]
                 )
@@ -1568,22 +1595,25 @@ def main():
             st.info("Upload a budget CSV with month and budget_amount columns to compare planned monthly spending with uploaded expenses.")
         else:
             try:
-                budget = pd.read_csv(budget_file)
-                budget.columns = [str(c).strip().lower() for c in budget.columns]
+                budget = read_limited_csv(budget_file)
                 if not {"month", "budget_amount"}.issubset(budget.columns):
                     st.error("Budget CSV needs month and budget_amount columns.")
                 else:
-                    budget["month"] = pd.to_datetime(budget["month"].astype(str), errors="coerce").dt.to_period("M").astype(str)
+                    parsed_month = pd.to_datetime(budget["month"].astype(str), errors="coerce")
+                    budget["month"] = parsed_month.dt.to_period("M").astype(str)
                     budget["budget_amount"] = pd.to_numeric(budget["budget_amount"], errors="coerce")
-                    budget = budget.dropna(subset=["budget_amount"])
+                    budget["budget_amount"] = budget["budget_amount"].where(np.isfinite(budget["budget_amount"]), np.nan)
+                    budget = budget[(parsed_month.notna()) & budget["budget_amount"].notna() & (budget["budget_amount"] >= 0)]
                     actual_expense = tracker.groupby("month", as_index=False)["operating_expenses"].sum()
                     budget_monthly = budget.groupby("month", as_index=False)["budget_amount"].sum().merge(actual_expense, on="month", how="outer").fillna(0)
                     budget_monthly["variance"] = budget_monthly["budget_amount"] - budget_monthly["operating_expenses"]
                     budget_monthly["status"] = np.where(budget_monthly["variance"] < 0, "Over budget", "Within budget")
                     display_table(budget_monthly.rename(columns={"month": "Month", "budget_amount": "Budget", "operating_expenses": "Actual expenses", "variance": "Budget remaining", "status": "Status"}), height=260, formats={"Budget": "₹{:,.2f}", "Actual expenses": "₹{:,.2f}", "Budget remaining": "₹{:,.2f}"})
                     st.caption("Budget comparison is only as complete as the expense records uploaded for the same months.")
+            except ValueError as exc:
+                st.error(f"Budget CSV rejected: {exc}")
             except Exception:
-                st.error("Could not read the budget CSV. Check the month and budget_amount columns.")
+                st.error("Could not safely read the budget CSV. Check its format and required columns.")
 
         st.markdown("### Expense breakdown")
         if not expenses.empty:
@@ -1699,18 +1729,18 @@ def main():
         st.markdown("### Data and privacy")
         st.write("This prototype is designed to process uploaded data in the active Streamlit session and does not intentionally write uploaded datasets or reports to application files or a database. It has no account login, role-based access, or shared organization workspace. Hosting-provider logs, runtime behavior, browser downloads, and platform retention are outside this code's control and must be checked separately. Do not upload confidential, customer-identifiable, payment, or regulated data until an independent security review is complete.")
         st.markdown("### Current prototype safeguards")
-        st.write("- Upload limits: 10 MiB, 100,000 rows, and 50 columns.")
+        st.write("- Sales, expense, and budget CSVs use consistent limits: 10 MiB, 100,000 rows, and 50 columns, with duplicate normalized headers rejected.")
         st.write("- Unneeded columns are discarded before analytics; accepted fields are date, units_sold, selling_price, unit_cost, product, and stock_on_hand.")
         st.write("- No application-level data cache is used for uploaded datasets.")
         st.write("- PDF and CSV exports are generated in memory; CSV text cells beginning with spreadsheet formula characters are neutralized.")
-        st.write("- The clear button resets this session's app state and invalidates the upload widget. It cannot erase downloaded files, screenshots, browser caches, or provider logs.")
+        st.write("- The clear button resets this session's app state and invalidates the upload widget. It is best-effort application cleanup; it cannot guarantee immediate erasure from server memory, browser caches, downloaded files, screenshots, backups, or provider logs.")
         st.markdown("### Required live security tests")
         st.write("1. Open the app in two separate browser profiles or one normal and one private window.")
         st.write("2. In profile A, upload a synthetic CSV with product names prefixed `TEST-A-`; in profile B, upload a different synthetic CSV prefixed `TEST-B-`.")
         st.write("3. Confirm each profile only shows its own products, totals, filters, forecasts, and exports.")
         st.write("4. Use **End session & clear app data** in profile A; confirm its upload disappears and profile B remains unchanged.")
         st.write("5. Refresh each profile and repeat after switching pages; inspect exported PDF/CSV files for unexpected rows.")
-        st.warning("Security status: these are code-level safeguards, not a certification. Do not upload confidential or customer-identifiable records until the live tests and hosting-retention review pass.")
+        st.warning("Security status: this is a single-app prototype, not a production multi-tenant security boundary. It has no user authentication or authorization. Browser isolation tests are useful but do not prove server-side isolation. Do not upload confidential or customer-identifiable records until a qualified security review and hosting-retention review are complete.")
         st.markdown("### Metric definitions")
         st.write("- **Revenue:** units sold × selling price")
         st.write("- **Estimated cost:** units sold × unit cost")
