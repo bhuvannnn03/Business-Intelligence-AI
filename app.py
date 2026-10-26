@@ -312,6 +312,7 @@ def safe_filename(label):
     return cleaned or "business"
 NAV_ITEMS = [
     "Home",
+    "Summary",
     "Sales Analytics",
     "Products & Profitability",
     "Inventory",
@@ -921,6 +922,7 @@ def main():
         """, unsafe_allow_html=True)
         nav_labels = {
             "Home": "▦   Overview",
+            "Summary": "✦   Summary",
             "Sales Analytics": "↗   Sales Analytics",
             "Products & Profitability": "◇   Products & Profitability",
             "Inventory": "⬡   Inventory",
@@ -1015,6 +1017,74 @@ def main():
     if page == "Home":
         render_home(filtered, daily, products, forecast, avg_units, avg_revenue)
 
+    elif page == "Summary":
+        section_heading("DECISIONS / SUMMARY", "Business summary", "A decision-focused briefing based on the selected records.")
+        total_revenue = float(filtered["revenue"].sum())
+        total_profit = float(filtered["gross_profit"].sum())
+        total_cost = float(filtered["estimated_cost"].sum())
+        total_units = float(filtered["units_sold"].sum())
+        margin = total_profit / total_revenue * 100 if total_revenue else 0
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Revenue", money(total_revenue))
+        m2.metric("Estimated gross profit", money(total_profit))
+        m3.metric("Gross margin", f"{margin:.1f}%")
+        m4.metric("Units sold", number(total_units))
+        st.markdown("### Executive readout")
+        st.markdown(f'<div class="ic-panel"><b>Performance snapshot</b><br>Across <b>{filtered["date"].nunique():,}</b> recorded days and <b>{filtered["product"].nunique():,}</b> products, the selected records show <b>{money(total_revenue)}</b> revenue and <b>{money(total_profit)}</b> estimated gross profit. Estimated product costs are <b>{money(total_cost)}</b>. Gross profit excludes operating expenses and taxes.</div>', unsafe_allow_html=True)
+        if len(daily) >= 14:
+            recent_rev = float(daily.tail(7)["revenue"].mean())
+            previous_rev = float(daily.iloc[-14:-7]["revenue"].mean())
+            recent_profit = float(daily.tail(7)["gross_profit"].mean())
+            previous_profit = float(daily.iloc[-14:-7]["gross_profit"].mean())
+            rev_change = ((recent_rev - previous_rev) / previous_rev * 100) if previous_rev else 0
+            profit_change = ((recent_profit - previous_profit) / abs(previous_profit) * 100) if previous_profit else 0
+            c1, c2 = st.columns(2)
+            c1.metric("Average daily revenue · latest 7 days", money(recent_rev), f"{rev_change:+.1f}% vs prior 7 days")
+            c2.metric("Average daily gross profit · latest 7 days", money(recent_profit), f"{profit_change:+.1f}% vs prior 7 days")
+            st.markdown("### Signals to review")
+            if rev_change < -5:
+                st.warning(f"Revenue momentum: recent average daily revenue is down {abs(rev_change):.1f}%. Check product mix, sales volume and data completeness.")
+            elif rev_change > 5:
+                st.success(f"Revenue momentum: recent average daily revenue is up {rev_change:.1f}%. Check that stock can support demand.")
+            else:
+                st.info(f"Revenue momentum is relatively stable ({rev_change:+.1f}%). Consider product-level changes before making broad decisions.")
+        else:
+            st.info("Trend comparisons need at least 14 recorded daily observations. Current totals are still available.")
+        if not products.empty:
+            best_rev = products.sort_values("revenue", ascending=False).iloc[0]
+            best_profit = products.sort_values("gross_profit", ascending=False).iloc[0]
+            lowest_margin = products[products["revenue"] > 0].sort_values("gross_margin_pct").head(1)
+            x1, x2, x3 = st.columns(3)
+            x1.metric("Revenue leader", str(best_rev["product"]), money(best_rev["revenue"]))
+            x2.metric("Gross-profit leader", str(best_profit["product"]), money(best_profit["gross_profit"]))
+            if not lowest_margin.empty:
+                x3.metric("Lowest-margin product", str(lowest_margin.iloc[0]["product"]), f"{lowest_margin.iloc[0]["gross_margin_pct"]:.1f}%")
+        st.markdown("### Suggested review checklist")
+        for item in [
+            "Check products with falling revenue or margin before changing prices.",
+            "Verify unit costs and selling prices are current and use a consistent currency.",
+            "Review stock availability before increasing promotion or demand generation.",
+            "Use the Forecasts page as a baseline estimate, not a guarantee.",
+            "Upload expense records before treating gross profit as an expense-adjusted result.",
+        ]:
+            st.markdown(f"- {item}")
+        st.markdown("### What-if scenario planner")
+        st.caption("Explore hypothetical changes using current units and unit economics. This is a scenario, not a prediction of customer response.")
+        sc1, sc2 = st.columns(2)
+        with sc1:
+            price_change_pct = st.slider("Hypothetical selling-price change (%)", min_value=-20, max_value=20, value=0, step=1)
+        with sc2:
+            cost_change_pct = st.slider("Hypothetical unit-cost change (%)", min_value=-20, max_value=20, value=0, step=1)
+        scenario_revenue = float(filtered["revenue"].sum()) * (1 + price_change_pct / 100)
+        scenario_cost = float(filtered["estimated_cost"].sum()) * (1 + cost_change_pct / 100)
+        scenario_profit = scenario_revenue - scenario_cost
+        q1, q2, q3 = st.columns(3)
+        q1.metric("Scenario revenue", money(scenario_revenue), f"{price_change_pct:+d}% price assumption")
+        q2.metric("Scenario cost", money(scenario_cost), f"{cost_change_pct:+d}% cost assumption")
+        q3.metric("Scenario gross profit", money(scenario_profit), money(scenario_profit - total_profit) + " vs current")
+        st.caption("This simple scenario holds sales volume constant. It does not model price elasticity, competitor responses, taxes, operating expenses or changes in demand.")
+        st.caption("Recommendations are descriptive prompts based on the uploaded records, not causal conclusions or financial advice.")
+
     elif page == "Sales Analytics":
         section_heading("ANALYTICS / SALES", "Sales analytics", "Explore revenue, sales volume, costs, and profitability over time.")
         a, b, c, d = st.columns(4)
@@ -1023,6 +1093,17 @@ def main():
         c.metric("Gross profit", money(filtered["gross_profit"].sum()))
         margin = filtered["gross_profit"].sum() / filtered["revenue"].sum() * 100 if filtered["revenue"].sum() else 0
         d.metric("Gross margin", f"{margin:.1f}%")
+        if len(daily) >= 14:
+            latest = daily.tail(7)
+            previous = daily.iloc[-14:-7]
+            r0, r1, r2 = st.columns(3)
+            prev_rev = float(previous["revenue"].sum())
+            change_rev = ((float(latest["revenue"].sum()) - prev_rev) / prev_rev * 100) if prev_rev else 0
+            prev_profit = float(previous["gross_profit"].sum())
+            change_profit = ((float(latest["gross_profit"].sum()) - prev_profit) / abs(prev_profit) * 100) if prev_profit else 0
+            r0.metric("Revenue · latest 7 days", money(latest["revenue"].sum()), f"{change_rev:+.1f}% vs prior 7 days")
+            r1.metric("Gross profit · latest 7 days", money(latest["gross_profit"].sum()), f"{change_profit:+.1f}% vs prior 7 days")
+            r2.metric("Recorded days", f"{len(daily):,}")
         st.markdown("### Revenue and gross profit over time")
         fig = line_figure(daily, "date", ["revenue", "gross_profit"], labels={"revenue": "Revenue", "gross_profit": "Gross profit"}, height=390)
         st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
@@ -1042,6 +1123,31 @@ def main():
             st.plotly_chart(polish_chart(fig, height=340), use_container_width=True, config={"displaylogo": False})
         st.markdown("### Daily performance table")
         display_table(daily, height=390, formats={"revenue": "₹{:,.2f}", "estimated_cost": "₹{:,.2f}", "gross_profit": "₹{:,.2f}", "gross_margin_pct": "{:.1f}%", "units_sold": "{:,.0f}"})
+        st.markdown("### Weekday and weekend pattern")
+        weekday_df = filtered.assign(day_type=np.where(filtered["date"].dt.dayofweek >= 5, "Weekend", "Weekday"))
+        weekday_summary = weekday_df.groupby("day_type", as_index=False).agg(revenue=("revenue", "sum"), units_sold=("units_sold", "sum"), gross_profit=("gross_profit", "sum"), recorded_days=("date", "nunique"))
+        if not weekday_summary.empty:
+            weekday_summary["revenue_per_recorded_day"] = weekday_summary["revenue"] / weekday_summary["recorded_days"].replace(0, np.nan)
+            display_table(weekday_summary, height=180, formats={"revenue": "₹{:,.2f}", "gross_profit": "₹{:,.2f}", "revenue_per_recorded_day": "₹{:,.2f}", "units_sold": "{:,.0f}"})
+        st.caption("Weekday/weekend comparisons use the dates in the selected records. Interpret carefully if some dates are missing.")
+        st.markdown("### Unusual daily movements")
+        if len(daily) >= 14:
+            baseline = daily.iloc[:-7]["revenue"]
+            base_mean = float(baseline.mean())
+            base_std = float(baseline.std(ddof=0))
+            recent = daily.tail(7).copy()
+            if base_std > 0:
+                recent["baseline_z_score"] = (recent["revenue"] - base_mean) / base_std
+                unusual = recent[recent["baseline_z_score"].abs() >= 2].copy()
+            else:
+                unusual = pd.DataFrame()
+            if unusual.empty:
+                st.info("No recent days crossed the simple two-standard-deviation review threshold.")
+            else:
+                display_table(unusual[["date", "revenue", "gross_profit", "baseline_z_score"]], height=220, formats={"revenue": "₹{:,.2f}", "gross_profit": "₹{:,.2f}", "baseline_z_score": "{:.2f}"})
+            st.caption("This is a simple statistical flag, not proof of an error or cause. Seasonality and promotions may explain unusual values.")
+        else:
+            st.info("At least 14 recorded days are needed for a basic unusual-movement check.")
 
     elif page == "Products & Profitability":
         section_heading("ANALYTICS / PRODUCTS", "Products & profitability", "Find which products contribute revenue and estimated gross profit.")
@@ -1061,38 +1167,115 @@ def main():
             st.markdown("### Product takeaways")
             st.markdown(f'<div class="ic-alert"><b>Revenue leader</b><br>{top["product"]} — {money(top["revenue"])} revenue.</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="ic-alert"><b>Gross-profit leader</b><br>{best_profit["product"]} — {money(best_profit["gross_profit"])} gross profit.</div>', unsafe_allow_html=True)
+            st.markdown("### Product action matrix")
+            matrix = products.copy()
+            median_rev = matrix["revenue"].median()
+            median_margin = matrix["gross_margin_pct"].median()
+            matrix["Revenue tier"] = np.where(matrix["revenue"] >= median_rev, "Higher revenue", "Lower revenue")
+            matrix["Margin tier"] = np.where(matrix["gross_margin_pct"] >= median_margin, "Higher margin", "Lower margin")
+            matrix["Review prompt"] = np.select(
+                [(matrix["revenue"] >= median_rev) & (matrix["gross_margin_pct"] >= median_margin),
+                 (matrix["revenue"] >= median_rev) & (matrix["gross_margin_pct"] < median_margin),
+                 (matrix["revenue"] < median_rev) & (matrix["gross_margin_pct"] >= median_margin)],
+                ["Protect availability", "Review cost and pricing", "Review visibility and demand"],
+                default="Review demand and unit economics"
+            )
+            display_table(matrix[["product", "revenue", "gross_profit", "gross_margin_pct", "Revenue tier", "Margin tier", "Review prompt"]], height=320, formats={"revenue": "₹{:,.2f}", "gross_profit": "₹{:,.2f}", "gross_margin_pct": "{:.1f}%"})
+            st.caption("Tiers use medians within the current selection. They are prompts for investigation, not automatic pricing or discontinuation decisions.")
 
     elif page == "Inventory":
-        section_heading("OPERATIONS / STOCK", "Inventory insights", "Use supplied stock counts to flag products for review.")
+        section_heading("OPERATIONS / STOCK", "Inventory intelligence", "Understand stock health, reorder priorities and slow-moving products using supplied stock data.")
         if "stock_on_hand" not in filtered.columns:
-            st.warning("This dataset has no stock_on_hand column. Upload one to enable inventory insights.")
+            st.warning("This dataset has no stock_on_hand column. Upload a CSV with current stock counts to enable inventory insights.")
+            st.markdown("### Recommended inventory fields")
+            display_table(pd.DataFrame({"Field": ["product", "stock_on_hand", "date", "units_sold", "unit_cost"], "Purpose": ["Identify products", "Current units available", "Measure demand history", "Calculate sales velocity", "Estimate stock value at cost"]}), height=230)
+            st.info("Advanced reorder planning also benefits from reorder_level, lead_time_days, supplier and minimum_order_qty. These fields are not currently consumed by the upload validator.")
         else:
-            inv_df = filtered.dropna(subset=["stock_on_hand"]).copy()
-            inv = inv_df.groupby("product", as_index=False).agg(
+            threshold = st.slider("Low-stock alert threshold (units)", min_value=1, max_value=100, value=10, step=1)
+            lead_days = st.slider("Planning lead time (days)", min_value=1, max_value=45, value=7, step=1)
+            safety_days = st.slider("Safety-stock buffer (days)", min_value=0, max_value=30, value=3, step=1)
+            inv_source = filtered.dropna(subset=["stock_on_hand"]).copy()
+            inv = inv_source.groupby("product", as_index=False).agg(
                 stock_on_hand=("stock_on_hand", "min"),
                 units_sold=("units_sold", "sum"),
                 revenue=("revenue", "sum"),
+                estimated_cost=("estimated_cost", "sum"),
+                unit_cost=("unit_cost", "mean"),
+                active_days=("date", "nunique"),
+                last_sale_date=("date", "max"),
             )
-            inv["status"] = inv["stock_on_hand"].apply(lambda x: "Out of stock" if x <= 0 else "Low stock" if x <= 10 else "In stock")
-            low = inv[inv["status"].isin(["Out of stock", "Low stock"])]
-            a, b, c = st.columns(3)
-            a.metric("Products monitored", len(inv))
-            b.metric("Low / out of stock", len(low))
-            c.metric("Minimum stock across products", number(inv["stock_on_hand"].min()) if not inv.empty else "—")
-            if not low.empty:
-                st.warning(f"{len(low)} product(s) are at or below the 10-unit low-stock threshold. Confirm current stock before ordering.")
-            else:
-                st.success("No product is at or below the 10-unit low-stock threshold in the selected records.")
-            display_table(inv.sort_values("stock_on_hand"), height=380, formats={"stock_on_hand": "{:,.0f}", "units_sold": "{:,.0f}", "revenue": "₹{:,.2f}"})
-            st.caption("If stock_on_hand is repeated on each sales row, this view uses the minimum supplied value per product. Confirm the source file's stock semantics.")
+            inv["avg_daily_units"] = inv["units_sold"] / inv["active_days"].replace(0, np.nan)
+            inv["days_of_stock"] = np.where(inv["avg_daily_units"] > 0, inv["stock_on_hand"] / inv["avg_daily_units"], np.nan)
+            inv["inventory_value_at_cost"] = inv["stock_on_hand"] * inv["unit_cost"]
+            inv["reorder_point_estimate"] = inv["avg_daily_units"].fillna(0) * (lead_days + safety_days)
+            inv["suggested_reorder_units_estimate"] = np.maximum(0, np.ceil(inv["reorder_point_estimate"] - inv["stock_on_hand"]))
+            inv["status"] = np.select(
+                [inv["stock_on_hand"] <= 0, inv["stock_on_hand"] <= threshold, inv["days_of_stock"].notna() & (inv["days_of_stock"] < lead_days)],
+                ["Out of stock", "Low stock", "Stockout risk"], default="Review stock"
+            )
+            inv["ABC class"] = "C"
+            inv_abc = inv.sort_values("revenue", ascending=False).copy()
+            if inv_abc["revenue"].sum() > 0:
+                inv_abc["revenue_share_cum"] = inv_abc["revenue"].cumsum() / inv_abc["revenue"].sum()
+                inv_abc["ABC class"] = np.select([inv_abc["revenue_share_cum"] <= .80, inv_abc["revenue_share_cum"] <= .95], ["A", "B"], default="C")
+                inv["ABC class"] = inv["product"].map(inv_abc.set_index("product")["ABC class"])
+            low = inv[inv["status"].isin(["Out of stock", "Low stock", "Stockout risk"])]
+            a, b, c, d = st.columns(4)
+            a.metric("Products monitored", f"{len(inv):,}")
+            b.metric("Low / out / risk", f"{len(low):,}")
+            c.metric("Inventory value at cost · estimate", money(inv["inventory_value_at_cost"].sum()))
+            d.metric("Units in stock", number(inv["stock_on_hand"].sum()))
+            tabs = st.tabs(["Inventory overview", "Reorder planner", "Demand & stockout", "Slow-moving stock", "ABC priority"])
+            with tabs[0]:
+                st.markdown("#### Stock health")
+                if not low.empty:
+                    st.warning(f"{len(low)} product(s) need review. Confirm current counts before placing orders.")
+                else:
+                    st.success("No products crossed the current stock thresholds in the selected records.")
+                display_table(inv.sort_values(["stock_on_hand", "product"])[["product", "stock_on_hand", "status", "units_sold", "avg_daily_units", "days_of_stock", "inventory_value_at_cost"]], height=360, formats={"stock_on_hand": "{:,.0f}", "units_sold": "{:,.0f}", "avg_daily_units": "{:,.2f}", "days_of_stock": "{:,.1f}", "inventory_value_at_cost": "₹{:,.2f}"})
+                fig = px.pie(inv, names="status", values="stock_on_hand", hole=.48, color_discrete_sequence=CHART_COLORS, title="Units by stock status")
+                fig.update_traces(textposition="inside", textinfo="label+percent", marker=dict(line=dict(color="#0d1727", width=2)))
+                st.plotly_chart(polish_chart(fig, height=320), use_container_width=True)
+            with tabs[1]:
+                st.markdown("#### Estimated reorder recommendations")
+                st.caption("These are planning estimates from recent average sales, current stock and the lead-time assumptions above. They are not purchase orders.")
+                reorder = inv[inv["suggested_reorder_units_estimate"] > 0].sort_values("suggested_reorder_units_estimate", ascending=False).copy()
+                reorder["estimated_reorder_cost"] = reorder["suggested_reorder_units_estimate"] * reorder["unit_cost"]
+                if reorder.empty:
+                    st.success("No estimated replenishment gap under the current assumptions.")
+                else:
+                    display_table(reorder[["product", "stock_on_hand", "avg_daily_units", "reorder_point_estimate", "suggested_reorder_units_estimate", "estimated_reorder_cost", "status"]], height=350, formats={"stock_on_hand": "{:,.0f}", "avg_daily_units": "{:,.2f}", "reorder_point_estimate": "{:,.1f}", "suggested_reorder_units_estimate": "{:,.0f}", "estimated_reorder_cost": "₹{:,.2f}"})
+                    st.metric("Estimated replenishment cost", money(reorder["estimated_reorder_cost"].sum()))
+            with tabs[2]:
+                st.markdown("#### Demand and stockout risk")
+                risk = inv.sort_values("days_of_stock", na_position="last")
+                display_table(risk[["product", "stock_on_hand", "avg_daily_units", "days_of_stock", "status"]], height=340, formats={"stock_on_hand": "{:,.0f}", "avg_daily_units": "{:,.2f}", "days_of_stock": "{:,.1f}"})
+                st.caption("Days-of-stock is only an estimate; sales velocity may be distorted by missing dates, promotions, seasonality or historical stockouts.")
+            with tabs[3]:
+                st.markdown("#### Slow-moving products")
+                slow = inv[(inv["stock_on_hand"] > 0) & ((inv["avg_daily_units"].fillna(0) <= 0) | (inv["days_of_stock"].fillna(999999) > 60))].copy()
+                slow["capital_tied_up_estimate"] = slow["inventory_value_at_cost"]
+                if slow.empty:
+                    st.info("No product met the current slow-moving heuristic. This does not prove all inventory is selling efficiently.")
+                else:
+                    display_table(slow[["product", "stock_on_hand", "units_sold", "days_of_stock", "capital_tied_up_estimate", "last_sale_date"]], height=320, formats={"stock_on_hand": "{:,.0f}", "units_sold": "{:,.0f}", "days_of_stock": "{:,.1f}", "capital_tied_up_estimate": "₹{:,.2f}"})
+                    st.metric("Estimated capital in flagged stock", money(slow["capital_tied_up_estimate"].sum()))
+            with tabs[4]:
+                st.markdown("#### ABC classification by revenue contribution")
+                st.caption("A = roughly first 80% of cumulative revenue, B = next 15%, C = remaining contribution. Classification is calculated from this filtered period.")
+                display_table(inv.sort_values("revenue", ascending=False)[["product", "revenue", "gross_profit" if "gross_profit" in inv.columns else "estimated_cost", "ABC class", "stock_on_hand"]], height=320, formats={"revenue": "₹{:,.2f}", "gross_profit": "₹{:,.2f}", "estimated_cost": "₹{:,.2f}", "stock_on_hand": "{:,.0f}"})
+            st.caption("Stock on hand is treated as the minimum supplied value per product because it may be repeated on sales rows. Validate this interpretation against your source system before making purchasing decisions.")
 
     elif page == "Forecast & Insights":
         section_heading("PLANNING / FORECAST", "Forecast & insights", "A transparent baseline forecast, with a historical check when enough daily records are available.")
-        a, b, c = st.columns(3)
-        a.metric("Next 7-day forecast units", number(forecast["Forecast units"].sum()))
-        b.metric("Average daily units", number(avg_units, 1))
-        c.metric("Average daily revenue", money(avg_revenue))
-        st.markdown("### Next seven days")
+        horizon = st.slider("Forecast horizon (days)", min_value=7, max_value=30, value=7, step=1)
+        forecast, avg_units, avg_revenue = forecast_next_week(daily, periods=horizon)
+        a, b, c, d = st.columns(4)
+        a.metric(f"Forecast units · {horizon} days", number(forecast["Forecast units"].sum()))
+        b.metric(f"Forecast revenue · {horizon} days", money(forecast["Forecast revenue"].sum()))
+        c.metric("Average daily units", number(avg_units, 1))
+        d.metric("Average daily revenue", money(avg_revenue))
+        st.markdown(f"### Next {horizon} days")
         fig = px.line(
             forecast,
             x="Date",
@@ -1156,6 +1339,12 @@ def main():
             "Upload expense CSV",
             type=["csv"],
             key="profit_tracker_expenses"
+        )
+        budget_file = st.file_uploader(
+            "Optional monthly budget CSV (month,budget_amount)",
+            type=["csv"],
+            key="profit_tracker_budget",
+            help="Use month values like 2026-10 and budget_amount as a numeric amount."
         )
     
         expenses = pd.DataFrame(
@@ -1323,6 +1512,28 @@ def main():
             )
             st.plotly_chart(polish_chart(fig, height=380), use_container_width=True)
     
+        st.markdown("### Budget vs actual expenses")
+        if budget_file is None:
+            st.info("Upload a budget CSV with month and budget_amount columns to compare planned monthly spending with uploaded expenses.")
+        else:
+            try:
+                budget = pd.read_csv(budget_file)
+                budget.columns = [str(c).strip().lower() for c in budget.columns]
+                if not {"month", "budget_amount"}.issubset(budget.columns):
+                    st.error("Budget CSV needs month and budget_amount columns.")
+                else:
+                    budget["month"] = pd.to_datetime(budget["month"].astype(str), errors="coerce").dt.to_period("M").astype(str)
+                    budget["budget_amount"] = pd.to_numeric(budget["budget_amount"], errors="coerce")
+                    budget = budget.dropna(subset=["budget_amount"])
+                    actual_expense = tracker.groupby("month", as_index=False)["operating_expenses"].sum()
+                    budget_monthly = budget.groupby("month", as_index=False)["budget_amount"].sum().merge(actual_expense, on="month", how="outer").fillna(0)
+                    budget_monthly["variance"] = budget_monthly["budget_amount"] - budget_monthly["operating_expenses"]
+                    budget_monthly["status"] = np.where(budget_monthly["variance"] < 0, "Over budget", "Within budget")
+                    display_table(budget_monthly.rename(columns={"month": "Month", "budget_amount": "Budget", "operating_expenses": "Actual expenses", "variance": "Budget remaining", "status": "Status"}), height=260, formats={"Budget": "₹{:,.2f}", "Actual expenses": "₹{:,.2f}", "Budget remaining": "₹{:,.2f}"})
+                    st.caption("Budget comparison is only as complete as the expense records uploaded for the same months.")
+            except Exception:
+                st.error("Could not read the budget CSV. Check the month and budget_amount columns.")
+
         st.markdown("### Expense breakdown")
         if not expenses.empty:
             category_totals = expenses.groupby(
@@ -1403,6 +1614,8 @@ def main():
             key="download_full_pdf_report",
         )
         st.caption("The report contains a revenue chart, executive summary, product table, baseline forecast, and forecast evaluation when enough history is available.")
+        st.download_button("Download filtered sales records (CSV)", data=safe_csv_bytes(filtered), file_name=f"{safe_filename(st.session_state['business_name'].strip().lower())}_filtered_records.csv", mime="text/csv", key="report_filtered_csv")
+        st.download_button("Download product performance (CSV)", data=safe_csv_bytes(products), file_name=f"{safe_filename(st.session_state['business_name'].strip().lower())}_product_performance.csv", mime="text/csv", key="report_products_csv")
 
     elif page == "Team & Settings":
         section_heading("WORKSPACE / CONFIGURATION", "Team & settings", "Configure the local workspace profile and learn what this prototype supports.")
@@ -1411,6 +1624,16 @@ def main():
         st.session_state["business_name"] = business_name.strip() or "My Business"
         currency = st.selectbox("Display currency", ["INR (₹)", "USD ($)", "EUR (€)", "GBP (£)"], index=0)
         st.session_state["display_currency"] = currency
+        st.markdown("### Optional performance targets")
+        target_revenue = st.number_input("Target revenue for selected period (₹)", min_value=0.0, value=float(st.session_state.get("target_revenue", 0.0)), step=1000.0)
+        target_margin = st.number_input("Target gross margin (%)", min_value=0.0, max_value=100.0, value=float(st.session_state.get("target_margin", 40.0)), step=1.0)
+        st.session_state["target_revenue"] = target_revenue
+        st.session_state["target_margin"] = target_margin
+        current_revenue = float(filtered["revenue"].sum())
+        current_margin = float(filtered["gross_profit"].sum() / current_revenue * 100) if current_revenue else 0.0
+        t1, t2 = st.columns(2)
+        t1.metric("Revenue target progress", f"{(current_revenue / target_revenue * 100):.1f}%" if target_revenue else "Set a target", money(current_revenue - target_revenue) + " vs target" if target_revenue else "No target set")
+        t2.metric("Gross margin target", f"{current_margin:.1f}%", f"{current_margin - target_margin:+.1f} pp vs target")
         st.markdown("### Team workspace")
         st.info("Team page is a planning placeholder. Email login, invitations, user roles, and shared multi-user data are not enabled in this version.")
         st.markdown("### Data and privacy")
@@ -1442,9 +1665,21 @@ def main():
         st.write(f"- Optional columns detected: {', '.join([c for c in ['product','stock_on_hand','order_id'] if c in filtered.columns]) or 'none'}")
         st.write(f"- Date range represented: {filtered['date'].min().date()} to {filtered['date'].max().date()}")
         st.write("- Financial values are derived from the supplied selling_price and unit_cost fields; they are not independently verified.")
+        st.markdown("### Data quality checks")
+        base_cols = [c for c in ["date", "product", "units_sold", "selling_price", "unit_cost"] if c in filtered.columns]
+        duplicate_count = int(filtered.duplicated(subset=base_cols).sum()) if base_cols else 0
+        st.metric("Potential duplicate rows", f"{duplicate_count:,}")
+        quality_rows = []
+        for col in ["date", "product", "units_sold", "selling_price", "unit_cost", "stock_on_hand"]:
+            if col in filtered.columns:
+                quality_rows.append({"Field": col, "Missing values": int(filtered[col].isna().sum()), "Unique values": int(filtered[col].nunique(dropna=True))})
+        if quality_rows:
+            display_table(pd.DataFrame(quality_rows), height=260)
+        st.caption("Duplicate checks are heuristic: two legitimate transactions can share the same values. Review flagged records before deleting anything.")
+        st.download_button("Download data-quality summary", safe_csv_bytes(pd.DataFrame(quality_rows)), "nurtura_data_quality_summary.csv", "text/csv")
 
     st.divider()
-    st.caption("NURTURA  /  BUSINESS INTELLIGENCE  ·  Prototype analytics · use synthetic/anonymized data until security validation is complete.")
+    st.caption("NURTURA  /  BUSINESS INTELLIGENCE  ·  Prototype analytics · estimates depend on uploaded data quality; use synthetic/anonymized data until security validation is complete.")
 
 
 if __name__ == "__main__":
