@@ -220,6 +220,56 @@ h3 { font-size: 27px !important; }
     padding-bottom: 8px !important;
     transform: translateY(-8px) !important;
 }
+
+/* FINAL OVERRIDE: remove the thin horizontal seam below Streamlit's top controls */
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"],
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+[data-testid="stAppViewContainer"] > .main,
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"],
+[data-testid="stMainBlockContainer"] > div,
+.block-container {
+    border-top: 0 !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+}
+[data-testid="stHeader"]::before,
+[data-testid="stHeader"]::after,
+[data-testid="stMain"]::before,
+[data-testid="stMain"]::after,
+[data-testid="stAppViewContainer"]::before,
+[data-testid="stAppViewContainer"]::after {
+    content: none !important;
+    display: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+/* Same continuous background behind the toolbar and page content */
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+[data-testid="stMain"],
+[data-testid="stAppViewContainer"] > .main,
+.block-container {
+    background: #0a101b !important;
+}
+[data-testid="stHeader"] {
+    height: 2rem !important;
+    min-height: 2rem !important;
+    border: none !important;
+    background: #0a101b !important;
+}
+.block-container {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
 </style>
     """,
     unsafe_allow_html=True,
