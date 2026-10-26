@@ -497,7 +497,17 @@ def prepare_data(uploaded_df):
         return None, ["The uploaded CSV is empty."]
 
     df = uploaded_df.copy()
-    df.columns = [str(c).strip().lower().replace(" ", "_") for c in df.columns]
+    # Normalize headers, then reject collisions such as "Selling Price" and
+    # "selling_price" rather than silently choosing one of the columns.
+    normalized_columns = [
+        re.sub(r"\s+", "_", str(c).strip().lower())[:100]
+        for c in df.columns
+    ]
+    if any(not column for column in normalized_columns):
+        return None, ["The CSV contains an empty column name. Rename columns and try again."]
+    if len(set(normalized_columns)) != len(normalized_columns):
+        return None, ["The CSV has duplicate column names after normalization. Rename duplicate columns and try again."]
+    df.columns = normalized_columns
     errors = []
     missing = [c for c in REQUIRED_COLUMNS if c not in df.columns]
     if missing:
@@ -511,11 +521,21 @@ def prepare_data(uploaded_df):
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     for col in ["units_sold", "selling_price", "unit_cost"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
+        # Treat infinities as invalid numeric input instead of allowing them
+        # to contaminate totals, charts, or generated reports.
+        df[col] = df[col].where(np.isfinite(df[col]), np.nan)
     if "stock_on_hand" in df.columns:
         df["stock_on_hand"] = pd.to_numeric(df["stock_on_hand"], errors="coerce")
+        df["stock_on_hand"] = df["stock_on_hand"].where(np.isfinite(df["stock_on_hand"]), np.nan)
     if "product" not in df.columns:
         df["product"] = "Unspecified product"
-    df["product"] = df["product"].fillna("Unspecified product").astype(str).str.strip()
+    # Limit untrusted labels so a single very long cell cannot dominate the UI/report.
+    df["product"] = (
+        df["product"].fillna("Unspecified product").astype(str)
+        .str.replace(r"[\x00-\x1f\x7f]", " ", regex=True)
+        .str.strip().str.slice(0, 120)
+    )
+    df.loc[df["product"] == "", "product"] = "Unspecified product"
 
     before = len(df)
     df = df.dropna(subset=REQUIRED_COLUMNS)
@@ -1684,7 +1704,13 @@ def main():
         st.write("- No application-level data cache is used for uploaded datasets.")
         st.write("- PDF and CSV exports are generated in memory; CSV text cells beginning with spreadsheet formula characters are neutralized.")
         st.write("- The clear button resets this session's app state and invalidates the upload widget. It cannot erase downloaded files, screenshots, browser caches, or provider logs.")
-        st.warning("Security status: prototype safeguards are not a certification. Session-isolation, deployment, logs, cache, and data-clear behavior still require live tests before confidential data is used.")
+        st.markdown("### Required live security tests")
+        st.write("1. Open the app in two separate browser profiles or one normal and one private window.")
+        st.write("2. In profile A, upload a synthetic CSV with product names prefixed `TEST-A-`; in profile B, upload a different synthetic CSV prefixed `TEST-B-`.")
+        st.write("3. Confirm each profile only shows its own products, totals, filters, forecasts, and exports.")
+        st.write("4. Use **End session & clear app data** in profile A; confirm its upload disappears and profile B remains unchanged.")
+        st.write("5. Refresh each profile and repeat after switching pages; inspect exported PDF/CSV files for unexpected rows.")
+        st.warning("Security status: these are code-level safeguards, not a certification. Do not upload confidential or customer-identifiable records until the live tests and hosting-retention review pass.")
         st.markdown("### Metric definitions")
         st.write("- **Revenue:** units sold × selling price")
         st.write("- **Estimated cost:** units sold × unit cost")
