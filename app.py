@@ -148,6 +148,78 @@ h3 { font-size: 27px !important; }
 [data-testid="stHeader"], [data-testid="stToolbar"] { background-color: #0a101b !important; }
 [data-testid="stAppViewContainer"], [data-testid="stMain"] { background: transparent !important; }
 .block-container { padding-top: .15rem !important; }
+/* Final spacing adjustment: blend top strip and raise the brand */
+[data-testid="stHeader"] {
+    height: 1.2rem !important;
+    min-height: 1.2rem !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    visibility: visible !important;
+}
+[data-testid="stToolbar"] { visibility: visible !important; }
+[data-testid="stAppViewContainer"] > .main,
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"],
+.block-container {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+[data-testid="stSidebar"] > div:first-child,
+[data-testid="stSidebar"] section[data-testid="stSidebarContent"] {
+    padding-top: 0 !important;
+}
+[data-testid="stSidebar"] .ic-brand {
+    margin-top: -1.5rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 8px !important;
+    transform: translateY(-10px);
+}
+
+/* FINAL: make Streamlit chrome and dashboard one continuous surface */
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"] {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+[data-testid="stHeader"] {
+    height: 2rem !important;
+    min-height: 2rem !important;
+    visibility: visible !important;
+}
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+[data-testid="stAppViewContainer"] > .main,
+[data-testid="stMainBlockContainer"],
+[data-testid="stAppViewBlockContainer"],
+.block-container {
+    background: transparent !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+.stApp {
+    background: radial-gradient(ellipse at 8% 0%, #14233a 0%, #0a101b 34%, #080d16 100%) !important;
+}
+/* Keep the sidebar toggle visible and clickable while removing the separate bar look. */
+[data-testid="stHeader"] button,
+[data-testid="stHeader"] [data-testid="stSidebarCollapsedControl"] {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+[data-testid="stSidebar"] > div:first-child,
+[data-testid="stSidebar"] section[data-testid="stSidebarContent"] {
+    padding-top: 0 !important;
+}
+[data-testid="stSidebar"] .ic-brand {
+    margin-top: -1rem !important;
+    padding-top: 0 !important;
+    padding-bottom: 8px !important;
+    transform: translateY(-8px) !important;
+}
 </style>
     """,
     unsafe_allow_html=True,
